@@ -40,5 +40,5 @@ func TestExtractJsonSchemaErrors(t *testing.T) {
 	require.True(t, ok)
 	errors := extractJsonSchemaErrors(schemaErr)
 	fmt.Println(errors)
-	require.NotEmpty(t, errors)
+	require.Len(t, errors, 3)
 }
