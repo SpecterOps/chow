@@ -36,8 +36,7 @@ type Validator struct {
 	decoder *json.Decoder
 	depth   int
 
-	schema    IngestSchema
-	readToEnd bool
+	schema IngestSchema
 
 	criticalErrors   []CriticalError
 	validationErrors []ValidationError
@@ -107,6 +106,7 @@ func (v *Validator) parseLegacyMetadata() (ingest.LegacyMetadata, error) {
 	if err := v.decoder.Decode(&legacyMetadata); err != nil {
 		return legacyMetadata, err
 	}
+
 	return ingest.LegacyMetadata{}, nil
 }
 
@@ -115,6 +115,7 @@ func (v *Validator) parseOpenGraphMetadata() (ingest.OpengraphMetadata, error) {
 	if err := v.decoder.Decode(&opengraphMetadata); err != nil {
 		return opengraphMetadata, err
 	}
+
 	return ingest.OpengraphMetadata{}, nil
 }
 
@@ -183,6 +184,8 @@ func (v *Validator) parseGraphNodes() error {
 				Errors:    extractJsonSchemaErrors(schemaErr),
 			})
 		}
+
+		index++
 	}
 
 	return nil
@@ -224,6 +227,8 @@ func (v *Validator) parseGraphEdges() error {
 				Errors:    extractJsonSchemaErrors(schemaErr),
 			})
 		}
+
+		index++
 	}
 
 	return nil
