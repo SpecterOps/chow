@@ -10,7 +10,8 @@ import (
 	"os"
 	"strings"
 
-	validator "github.com/SpecterOps/chow/pkg/validator"
+	"github.com/specterops/bloodhound/packages/go/bhlog/attr"
+	validator "github.com/specterops/bloodhound/packages/go/chow/ingestvalidator"
 )
 
 var (
@@ -24,7 +25,7 @@ func main() {
 	files := flag.Args()
 
 	if len(files) < 1 {
-		slog.Error("no files provided")
+		slog.Error("No files provided")
 		os.Exit(1)
 	}
 
@@ -32,24 +33,26 @@ func main() {
 
 	reader, err := os.Open(fileName)
 	if err != nil {
-		slog.Error("failed to open file", "fileName", fileName, "error", err)
+		slog.Error("Failed to open file",
+			slog.String("file_name", fileName),
+			attr.Error(err),
+		)
 		os.Exit(1)
 	}
+	defer reader.Close()
 
 	jsonSchema, err := validator.LoadIngestSchema()
 	if err != nil {
-		slog.Error("failed to load ingest schema", "error", err)
+		slog.Error("Failed to load ingest schema", attr.Error(err))
 		os.Exit(1)
 	}
 
-	reader.Seek(0, io.SeekStart)
+	v := validator.NewValidator(reader, jsonSchema)
 
-	decoder := json.NewDecoder(reader)
-	v := validator.NewValidator(decoder, jsonSchema)
-
-	report, err := v.Validate()
-	if err != nil {
-		slog.Error("failed to validate", "err", err)
+	_, report, err := v.ParseAndValidate()
+	validationFailed := err != nil
+	if validationFailed {
+		slog.Error("Validation failed", attr.Error(err))
 	}
 
 	var w io.WriteCloser
@@ -57,8 +60,10 @@ func main() {
 	if output != "" {
 		file, err := os.Create(output)
 		if err != nil {
-			slog.Error("failed to open output file", "err", err)
+			slog.Error("Failed to open output file", attr.Error(err))
+			os.Exit(1)
 		}
+		defer file.Close()
 
 		w = file
 	} else {
@@ -66,6 +71,10 @@ func main() {
 	}
 
 	outputReport(w, report)
+
+	if validationFailed {
+		os.Exit(1)
+	}
 }
 
 func outputReport(w io.WriteCloser, report validator.ValidationReport) error {
@@ -101,18 +110,20 @@ func outputReport(w io.WriteCloser, report validator.ValidationReport) error {
 }
 
 func formatCriticalError(e validator.CriticalError) string {
-	return fmt.Sprintf("CRITICAL ERROR:\n%s", e.Message)
+	return fmt.Sprintf("CRITICAL ERROR:\n%s\n%v", e.Message, e.Error)
 }
 
-func formatValidationError(e validator.ValidationError) (string, error) {
-	var sb strings.Builder
+func formatValidationError(valErr validator.ValidationError) (string, error) {
+	var (
+		sb       strings.Builder
+		objBytes bytes.Buffer
+	)
 
 	sb.WriteString("VALIDATION ERROR:\n")
 
-	sb.WriteString("Location: " + e.Location + "\n")
+	sb.WriteString("Location: " + valErr.Location + "\n")
 
-	var objBytes bytes.Buffer
-	err := json.Indent(&objBytes, []byte(e.RawObject), "", "\t")
+	err := json.Indent(&objBytes, []byte(valErr.RawObject), "", "\t")
 	if err != nil {
 		return "", err
 	}
@@ -120,7 +131,7 @@ func formatValidationError(e validator.ValidationError) (string, error) {
 	sb.WriteString("Object:\n" + objBytes.String() + "\n")
 
 	sb.WriteString("Errors:\n")
-	for _, e := range e.Errors {
+	for _, e := range valErr.Errors {
 		sb.WriteString("at " + e.Location + ": " + e.Error + "\n")
 	}
 
