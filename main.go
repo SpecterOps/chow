@@ -10,8 +10,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/specterops/bloodhound/packages/go/bhlog/attr"
-	validator "github.com/specterops/bloodhound/packages/go/chow/ingestvalidator"
+	"github.com/specterops/chow/pkg/validator"
 )
 
 var (
@@ -35,7 +34,7 @@ func main() {
 	if err != nil {
 		slog.Error("Failed to open file",
 			slog.String("file_name", fileName),
-			attr.Error(err),
+			slog.String("err", err.Error()),
 		)
 		os.Exit(1)
 	}
@@ -43,7 +42,7 @@ func main() {
 
 	jsonSchema, err := validator.LoadIngestSchema()
 	if err != nil {
-		slog.Error("Failed to load ingest schema", attr.Error(err))
+		slog.Error("Failed to load ingest schema", slog.String("err", err.Error()))
 		os.Exit(1)
 	}
 
@@ -52,7 +51,7 @@ func main() {
 	_, report, err := v.ParseAndValidate()
 	validationFailed := err != nil
 	if validationFailed {
-		slog.Error("Validation failed", attr.Error(err))
+		slog.Error("Validation failed", slog.String("err", err.Error()))
 	}
 
 	var w io.WriteCloser
@@ -60,7 +59,7 @@ func main() {
 	if output != "" {
 		file, err := os.Create(output)
 		if err != nil {
-			slog.Error("Failed to open output file", attr.Error(err))
+			slog.Error("Failed to open output file", slog.String("err", err.Error()))
 			os.Exit(1)
 		}
 		defer file.Close()
