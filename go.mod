@@ -1,4 +1,4 @@
-module github.com/SpecterOps/chow
+module github.com/specterops/chow
 
 go 1.25.3
 
