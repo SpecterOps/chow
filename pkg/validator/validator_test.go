@@ -141,7 +141,7 @@ func Test_ParseAndValidate(t *testing.T) {
 				`{"id":"1","kinds":["A","A","A","A"]},{"id":"1","kinds":["A","A","A","A"]},{"id":"1","kinds":["A","A","A","A"]},{"id":"1","kinds":["A","A","A","A"]},` +
 				`{"id":"1","kinds":["A","A","A","A"]},{"id":"1","kinds":["A","A","A","A"]},{"id":"1","kinds":["A","A","A","A"]},{"id":"1","kinds":["A","A","A","A"]},` +
 				`{"id":"1","kinds":["A","A","A","A"]},{"id":"1","kinds":["A","A","A","A"]},{"id":"1","kinds":["A","A","A","A"]},{"id":"1","kinds":["A","A","A","A"]},` +
-				`{"id":"1","kinds":["A","A","A","A"]},{"id":"1","kinds":["A","A","A","A"]},{"id":"1","kinds":["A","A","A","A"]},{"id":"1","kinds":["A","A","A","A"]}}]}}`,
+				`{"id":"1","kinds":["A","A","A","A"]},{"id":"1","kinds":["A","A","A","A"]},{"id":"1","kinds":["A","A","A","A"]},{"id":"1","kinds":["A","A","A","A"]}]}}`,
 			expectedParsedData: validator.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: validator.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 15}},
 			errValidationFunc: func(t *testing.T, report validator.ValidationReport, err error) {
 				assert.ErrorIs(t, err, validator.ErrMaxValidationErrors)
@@ -267,16 +267,6 @@ func Test_ParseAndValidate(t *testing.T) {
 			},
 		},
 		{
-			name:               "unsuccessful payload, no valid tags",
-			payload:            `{}`,
-			expectedParsedData: validator.ParsedData{},
-			errValidationFunc: func(t *testing.T, report validator.ValidationReport, err error) {
-				assert.ErrorIs(t, err, validator.ErrInvalidFileConfiguration)
-
-				assert.ElementsMatch(t, report.CriticalErrors, []validator.CriticalError{{Message: "no tags found", Error: validator.ErrInvalidFileConfiguration}})
-			},
-		},
-		{
 			name:               "unsuccessful original payload, duplicate meta tag",
 			payload:            `{"meta":{"methods":0,"type":"sessions","count":0,"version":5},"meta":0,"data":[]}`,
 			expectedParsedData: validator.ParsedData{PayloadType: ingest.DataTypeSession, LegacyMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}},
@@ -322,6 +312,16 @@ func Test_ParseAndValidate(t *testing.T) {
 			},
 		},
 		// Invalid payload tests
+		{
+			name:               "unsuccessful payload, no valid tags",
+			payload:            `{}`,
+			expectedParsedData: validator.ParsedData{},
+			errValidationFunc: func(t *testing.T, report validator.ValidationReport, err error) {
+				assert.ErrorIs(t, err, validator.ErrInvalidFileConfiguration)
+
+				assert.ElementsMatch(t, report.CriticalErrors, []validator.CriticalError{{Message: "no tags found", Error: validator.ErrInvalidFileConfiguration}})
+			},
+		},
 		{
 			name:               "enforce mutual exclusivity",
 			payload:            `{"data":[],"graph":{}}`,
