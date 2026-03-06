@@ -13,7 +13,7 @@ chow -output errors.txt test.json
 # Installation
 
 ```bash
-go install github.com/specterops/chow
+go install github.com/specterops/chow@latest
 ```
 
 Or you can clone the repo and run the following command from the top level:

@@ -1,0 +1,7 @@
+This file contains a list of people who've made contributions to chow
+
+Original design, implementation, and review:
+  Wes Miller (@wes-mil)
+  Alyx Holms (@superlinkx)
+  Brandon Shearin (@brandonshearin)
+  Rohan Vazarkar (@rvazarkar)
