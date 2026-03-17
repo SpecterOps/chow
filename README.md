@@ -21,3 +21,13 @@ Or you can clone the repo and run the following command from the top level:
 ```bash
 go install .
 ```
+
+# JSON Schema
+
+Want to add the OpenGraph schema to your JSON document?
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/SpecterOps/chow/refs/heads/main/pkg/validator/jsonschema/opengraph.json"
+}
+```
