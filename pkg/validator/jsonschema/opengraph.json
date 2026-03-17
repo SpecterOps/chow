@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "description": "Top level object for opengraph payloads. Contains metadata and graph tags.",
+  "properties": {
+    "metadata": {
+      "$ref": "./opengraphmetadata.json"
+    },
+    "graph": {
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "./node.json"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "./edge.json"
+          }
+        }
+      }
+    }
+  }
+}

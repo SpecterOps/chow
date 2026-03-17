@@ -167,7 +167,16 @@ func Test_ParseAndValidate(t *testing.T) {
 		},
 		{
 			name:               "successful opengraph payload with edge",
-			payload:            `{"metadata":{"source_kind": "hellobase"},"graph": {"nodes":[], "edges": [{"start": {"value": "TESTNODE"},"end": {"value": "TESTNODE2"},"kind": "RELATED", "properties": {"items": ["hi"]}}]}}`,
+			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[],"edges":[{"start":{"value":"TESTNODE"},"end":{"value":"TESTNODE2"},"kind":"RELATED","properties":{"items":["hi"]}}]}}`,
+			expectedParsedData: validator.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: validator.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			errValidationFunc: func(t *testing.T, report validator.ValidationReport, err error) {
+				assert.Equal(t, emptyValidationReport, report)
+				assert.NoError(t, err)
+			},
+		},
+		{
+			name:               "successful opengraph payload with edge property matching",
+			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[],"edges":[{"start":{"match_by":"property","property_matchers":[{"key":"prop_1","operator":"equals","value":"ROHAN"}]},"end":{"match_by":"property","property_matchers":[{"key":"prop_1","operator":"equals","value":"WES"}]},"kind":"RELATED","properties":{"items":["hi"]}}]}}`,
 			expectedParsedData: validator.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: validator.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report validator.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
@@ -202,6 +211,22 @@ func Test_ParseAndValidate(t *testing.T) {
 						Location:  "/graph/edges[0]",
 						RawObject: `{"start":{"value":1},"end":{"value":"TESTNODE2"},"kind":"RELATED","properties":{"items":["hi"]}}`,
 						Errors:    []validator.ValidationErrorDetail{{Location: "/start/value", Error: "got number, want string"}},
+					},
+				})
+			},
+		},
+		{
+			name:               "unsuccessful opengraph payload, invalid edge property matching",
+			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[],"edges":[{"start":{"match_by":"property","property_matchers":{"key":"prop_1","operator":"equals","value":"ROHAN"}},"end":{"match_by":"property","property_matchers":[{"key":"prop_1","operator":"equals","value":"WES"}]},"kind":"RELATED","properties":{"items":["hi"]}}]}}`,
+			expectedParsedData: validator.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: validator.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			errValidationFunc: func(t *testing.T, report validator.ValidationReport, err error) {
+				assert.ErrorIs(t, err, validator.ErrValidationErrors)
+
+				assert.ElementsMatch(t, report.ValidationErrors, []validator.ValidationError{
+					{
+						Location:  "/graph/edges[0]",
+						RawObject: `{"start":{"match_by":"property","property_matchers":{"key":"prop_1","operator":"equals","value":"ROHAN"}},"end":{"match_by":"property","property_matchers":[{"key":"prop_1","operator":"equals","value":"WES"}]},"kind":"RELATED","properties":{"items":["hi"]}}`,
+						Errors:    []validator.ValidationErrorDetail{{Location: "/start/property_matchers", Error: "got object, want array"}},
 					},
 				})
 			},

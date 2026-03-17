@@ -1,22 +1,38 @@
 {
   "title": "Generic Ingest Node",
-  "description": "A node used in a generic graph ingestion system. Each node must have a unique identifier (`id`). Nodes are required to have between 1 and 3 kinds, unless a source_kind is defined. Then nodes are not required to specify a kind. Nodes may also include a `properties` object containing custom attributes.",
+  "description": "A node used in a generic graph ingestion system. Each node must have a unique identifier (`id`) and at least one kind describing its role or type. Nodes may also include a `properties` object containing custom attributes.",
   "type": "object",
-  "properties": {
-    "id": { "type": "string" },
-    "properties": {
+  "$defs": {
+    "property_map": {
       "type": ["object", "null"],
-      "description": "A key-value map of node attributes. Values must not be objects. If a value is an array, it must contain only primitive types (e.g., strings, numbers, booleans) and must be homogeneous (all items must be of the same type).",
+      "description": "A key-value map of entity attributes. Values must not be objects. If a value is an array, it must contain only primitive types (e.g., strings, numbers, booleans) and must be homogeneous (all items must be of the same type).",
       "additionalProperties": {
         "anyOf": [
           { "type": "string" },
           { "type": "number" },
           { "type": "boolean" },
-          { "type": "array", "items": { "type": "string" } },
-          { "type": "array", "items": { "type": "number" } },
-          { "type": "array", "items": { "type": "boolean" } }
+          {
+            "type": "array",
+            "anyOf": [
+              { "items": { "type": "string" } },
+              { "items": { "type": "number" } },
+              { "items": { "type": "boolean" } }
+            ]
+          }
         ]
+      },
+
+      "not": {
+        "required": ["objectid"]
       }
+    }
+  },
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "properties": {
+      "$ref": "#/$defs/property_map"
     },
     "kinds": {
       "type": ["array"],
@@ -37,7 +53,7 @@
       "properties": {
         "manufacturer": "Brandon Corp",
         "model": "4000x",
-        "isActive": true,
+        "is_active": true,
         "rating": 43.5
       },
       "kinds": ["Device", "Asset"]
