@@ -337,6 +337,11 @@ func (v *Validator) validationLoop() error {
 				if err != nil {
 					return err
 				}
+			case "$schema":
+				if _, err := v.nextToken(); err != nil {
+					v.reportCriticalError("failed to consume $schema value", err)
+					return err
+				}
 			default:
 				v.reportCriticalError(fmt.Sprintf("unrecognized top level tag: %s", tag), ErrInvalidFileConfiguration)
 				return ErrInvalidFileConfiguration

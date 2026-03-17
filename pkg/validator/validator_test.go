@@ -66,6 +66,15 @@ func Test_ParseAndValidate(t *testing.T) {
 			},
 		},
 		{
+			name:               "successful opengraph payload with $schema",
+			payload:            `{"$schema":"test","metadata":{"source_kind":"hellobase"},"graph":{"nodes":[]}}`,
+			expectedParsedData: validator.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: validator.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}}},
+			errValidationFunc: func(t *testing.T, report validator.ValidationReport, err error) {
+				assert.Equal(t, emptyValidationReport, report)
+				assert.NoError(t, err)
+			},
+		},
+		{
 			name:               "successful opengraph payload with node",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[{"id":"TESTNODE","kinds":["User"],"properties":{"items":["hi"]}}]}}`,
 			expectedParsedData: validator.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: validator.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
