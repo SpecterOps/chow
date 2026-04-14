@@ -157,6 +157,11 @@ func (v *Validator) buildValidationReport() ValidationReport {
 	}
 }
 
+// result() is a helper for returning the current parsed data, validation report, and provided error.
+func (v *Validator) result(err error) (ParsedData, ValidationReport, error) {
+	return v.buildParsedData(), v.buildValidationReport(), err
+}
+
 // Error Helper functions -------------------------------------------------------------------------
 
 // reportCriticalError() is a helper function for adding a critical error
@@ -245,29 +250,57 @@ func (v *Validator) finalFileConfigCheck() error {
 func (v *Validator) ParseAndValidate() (ParsedData, ValidationReport, error) {
 	if err := v.enterObject(); err != nil {
 		v.reportCriticalError("failed to enter json object", err)
-		return v.buildParsedData(), v.buildValidationReport(), err
+		return v.result(err)
 	}
 
 	valLoopErr := v.validationLoop()
-	// This multireader ensures that bytes included in the json decoder's buffer. This guarantees that ALL bytes are read from the io.Reader
-	_, readToEndErr := io.Copy(io.Discard, io.MultiReader(v.decoder.Buffered(), v.reader))
-	if valLoopErr != nil && readToEndErr != nil {
-		v.reportCriticalError("failed to read file to end", readToEndErr)
-		return v.buildParsedData(), v.buildValidationReport(), errors.Join(valLoopErr, readToEndErr)
-	} else if valLoopErr == nil && readToEndErr != nil {
-		v.reportCriticalError("failed to read file to end", readToEndErr)
-		return v.buildParsedData(), v.buildValidationReport(), readToEndErr
-	} else if valLoopErr != nil {
-		return v.buildParsedData(), v.buildValidationReport(), valLoopErr
+
+	if err := v.readToEnd(valLoopErr); err != nil {
+		return v.result(err)
 	}
 
-	if err := v.finalFileConfigCheck(); err != nil {
-		return v.buildParsedData(), v.buildValidationReport(), err
-	} else if len(v.validationErrors) > 0 {
-		return v.buildParsedData(), v.buildValidationReport(), ErrValidationErrors
-	} else {
-		return v.buildParsedData(), v.buildValidationReport(), nil
+	return v.result(v.finalizeParse())
+}
+
+// readToEnd() checks for trailing input if validation succeeded, then consumes all remaining bytes from the decoder
+// buffer and reader while preserving any existing loop error.
+func (v *Validator) readToEnd(loopErr error) error {
+	errToReturn := loopErr
+	if errToReturn == nil {
+		if err := v.expectEOF(); err != nil {
+			v.reportCriticalError("expected to hit the end of the file", err)
+			errToReturn = err
+		}
 	}
+
+	// This multireader ensures that bytes included in the json decoder's buffer. This guarantees that ALL bytes are read from the io.Reader
+	_, readToEndErr := io.Copy(io.Discard, io.MultiReader(v.decoder.Buffered(), v.reader))
+	if readToEndErr != nil {
+		v.reportCriticalError("failed to read file to end", readToEndErr)
+	}
+
+	if errToReturn != nil && readToEndErr != nil {
+		return errors.Join(errToReturn, readToEndErr)
+	}
+
+	if readToEndErr != nil {
+		return readToEndErr
+	}
+
+	return errToReturn
+}
+
+// finalizeParse() performs the final post-parse validation checks and collapses validation errors into a single error.
+func (v *Validator) finalizeParse() error {
+	if err := v.finalFileConfigCheck(); err != nil {
+		return err
+	}
+
+	if len(v.validationErrors) > 0 {
+		return ErrValidationErrors
+	}
+
+	return nil
 }
 
 // Validation Loop functions ----------------------------------------------------------------------
@@ -641,4 +674,19 @@ func (v *Validator) nextToken() (json.Token, error) {
 	}
 
 	return tok, nil
+}
+
+// expectEOF() reads the next JSON token and expects to hit the end of the file. Returns an error otherwise
+func (v *Validator) expectEOF() error {
+	tok, err := v.nextToken()
+
+	if err == io.EOF {
+		return nil
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return fmt.Errorf("expected EOF, instead got token: %v", tok)
 }

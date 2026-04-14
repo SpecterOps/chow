@@ -376,6 +376,17 @@ func Test_ParseAndValidate(t *testing.T) {
 				assert.ElementsMatch(t, report.CriticalErrors, []validator.CriticalError{{Message: "unrecognized top level tag: pants", Error: validator.ErrInvalidFileConfiguration}})
 			},
 		},
+		{
+			name:               "unsuccessful payload, trailing data after object",
+			payload:            `{"graph":{"nodes":[]}}{}`,
+			expectedParsedData: validator.ParsedData{PayloadType: ingest.DataTypeOpenGraph},
+			errValidationFunc: func(t *testing.T, report validator.ValidationReport, err error) {
+				assert.ErrorContains(t, err, "expected EOF, instead got token: {")
+				require.Len(t, report.CriticalErrors, 1)
+				assert.Equal(t, "expected to hit the end of the file", report.CriticalErrors[0].Message)
+				assert.ErrorContains(t, report.CriticalErrors[0].Error, "expected EOF, instead got token: {")
+			},
+		},
 	}
 
 	schema, err := validator.LoadIngestSchema()
