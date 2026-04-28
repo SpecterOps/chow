@@ -268,11 +268,6 @@ func (v *Validator) ParseAndValidate() (ParsedData, ValidationReport, error) {
 // ParseMetadata() walks the top-level JSON object and extracts metadata (either legacy "meta" or
 // opengraph "metadata") without performing schema validation of the payload body. It returns as soon
 // as a metadata tag is successfully decoded; the remainder of the reader is not consumed.
-//
-// The returned ParsedData only contains fields derivable from the metadata header — PayloadType,
-// LegacyMetadata, and OpengraphData.Metadata. Validation-only fields (NodesValidated,
-// EdgesValidated) are always zero. PayloadType is empty when no top-level metadata tag is found;
-// callers handling opengraph payloads with no metadata block should default appropriately.
 func (v *Validator) ParseMetadata() (ParsedData, error) {
 	if err := v.enterObject(); err != nil {
 		v.reportCriticalError("failed to enter json object", err)
@@ -415,10 +410,9 @@ func (v *Validator) validationLoop() error {
 }
 
 // parseLoop() walks the top-level object looking for tags that identify the payload shape
-// ("meta", "metadata", or "graph"), decoding any metadata tag into the Validator's internal state.
-// All other tags have their values skipped via token streaming so that arbitrarily large payload
-// bodies are not buffered. It returns as soon as a tag that uniquely identifies the payload type
-// is found or the top-level object is exited.
+// ("meta", "metadata"), decoding any metadata tag into the Validator's internal state and
+// returning as soon as a tag that uniquely identifies the payload type is found or the
+// top-level object is exited.
 func (v *Validator) parseLoop() error {
 	for {
 		if tag, exitedBlock, err := v.nextTagAtDepth(1); err != nil {
