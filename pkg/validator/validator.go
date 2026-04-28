@@ -122,8 +122,11 @@ type ParsedOpenGraphData struct {
 	EdgesValidated int
 }
 
-// buildParsedData() aggregates data collected during ParseAndValidate() into the ParsedData struct
-func (v *Validator) buildParsedData() ParsedData {
+// buildValidatedData() aggregates data collected during ParseAndValidate() into the ParsedData struct.
+// It is specific to the validation path and relies on signals (GraphFound, NodesValidated, etc.)
+// that are only populated by validationLoop. ParseMetadata() builds its result inline rather than
+// using this helper.
+func (v *Validator) buildValidatedData() ParsedData {
 	p := ParsedData{}
 
 	if (v.opengraphData.GraphFound || v.opengraphData.MetadataFound) && (v.originalData.MetadataFound || v.originalData.DataFound) {
@@ -159,7 +162,7 @@ func (v *Validator) buildValidationReport() ValidationReport {
 
 // result() is a helper for returning the current parsed data, validation report, and provided error.
 func (v *Validator) result(err error) (ParsedData, ValidationReport, error) {
-	return v.buildParsedData(), v.buildValidationReport(), err
+	return v.buildValidatedData(), v.buildValidationReport(), err
 }
 
 // Error Helper functions -------------------------------------------------------------------------
@@ -262,6 +265,34 @@ func (v *Validator) ParseAndValidate() (ParsedData, ValidationReport, error) {
 	return v.result(v.finalizeParse())
 }
 
+// ParseMetadata() walks the top-level JSON object and extracts metadata (either legacy "meta" or
+// opengraph "metadata") without performing schema validation of the payload body. It returns as soon
+// as a metadata tag is successfully decoded; the remainder of the reader is not consumed.
+//
+// The returned ParsedData only contains fields derivable from the metadata header — PayloadType,
+// LegacyMetadata, and OpengraphData.Metadata. Validation-only fields (NodesValidated,
+// EdgesValidated) are always zero. PayloadType is empty when no top-level metadata tag is found;
+// callers handling opengraph payloads with no metadata block should default appropriately.
+func (v *Validator) ParseMetadata() (ParsedData, error) {
+	if err := v.enterObject(); err != nil {
+		v.reportCriticalError("failed to enter json object", err)
+		return ParsedData{}, err
+	}
+
+	err := v.parseLoop()
+
+	p := ParsedData{}
+	switch {
+	case v.originalData.MetadataFound:
+		p.PayloadType = v.originalData.Metadata.Type
+		p.LegacyMetadata = v.originalData.Metadata
+	case v.opengraphData.MetadataFound:
+		p.PayloadType = ingest.DataTypeOpenGraph
+		p.OpengraphData.Metadata = v.opengraphData.Metadata
+	}
+	return p, err
+}
+
 // readToEnd() checks for trailing input if validation succeeded, then consumes all remaining bytes from the decoder
 // buffer and reader while preserving any existing loop error.
 func (v *Validator) readToEnd(loopErr error) error {
@@ -303,7 +334,7 @@ func (v *Validator) finalizeParse() error {
 	return nil
 }
 
-// Validation Loop functions ----------------------------------------------------------------------
+// Loop functions ----------------------------------------------------------------------
 
 // validationLoop() is the primary driver behind the file validation. It walks through the file and directs to
 // child validation functions
@@ -378,6 +409,46 @@ func (v *Validator) validationLoop() error {
 			default:
 				v.reportCriticalError(fmt.Sprintf("unrecognized top level tag: %s", tag), ErrInvalidFileConfiguration)
 				return ErrInvalidFileConfiguration
+			}
+		}
+	}
+}
+
+// parseLoop() walks the top-level object looking for tags that identify the payload shape
+// ("meta", "metadata", or "graph"), decoding any metadata tag into the Validator's internal state.
+// All other tags have their values skipped via token streaming so that arbitrarily large payload
+// bodies are not buffered. It returns as soon as a tag that uniquely identifies the payload type
+// is found or the top-level object is exited.
+func (v *Validator) parseLoop() error {
+	for {
+		if tag, exitedBlock, err := v.nextTagAtDepth(1); err != nil {
+			v.reportCriticalError("failed parsing top level tag", err)
+			return err
+		} else if exitedBlock {
+			return nil
+		} else {
+			switch tag {
+			case "meta":
+				var metadata ingest.OriginalMetadata
+				if err := v.decoder.Decode(&metadata); err != nil {
+					v.reportCriticalError("failed to decode original metadata", err)
+					return err
+				}
+
+				v.originalData.MetadataFound = true
+				v.originalData.Metadata = metadata
+				return nil
+			case "metadata":
+				var metadata ingest.OpengraphMetadata
+				if err := v.decoder.Decode(&metadata); err != nil {
+					v.reportCriticalError("failed to decode opengraph metadata", err)
+					return err
+				}
+
+				v.opengraphData.MetadataFound = true
+				v.opengraphData.Metadata = metadata
+				return nil
+			default:
 			}
 		}
 	}
