@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0
-package validator
+package payload
 
 import (
 	"encoding/json"
@@ -43,7 +43,7 @@ type Validator struct {
 	decoder *json.Decoder
 	depth   int
 
-	schema IngestSchema
+	schema Schema
 
 	originalData  originalData
 	opengraphData opengraphData
@@ -72,7 +72,7 @@ type opengraphData struct {
 	EdgesValidated int
 }
 
-func NewValidator(reader io.Reader, schema IngestSchema) Validator {
+func NewValidator(reader io.Reader, schema Schema) Validator {
 	return Validator{
 		reader:  reader,
 		decoder: json.NewDecoder(reader),
@@ -284,7 +284,10 @@ func (v *Validator) ParseMetadata() (ParsedData, error) {
 	case v.opengraphData.MetadataFound:
 		p.PayloadType = ingest.DataTypeOpenGraph
 		p.OpengraphData.Metadata = v.opengraphData.Metadata
+	case v.opengraphData.GraphFound:
+		p.PayloadType = ingest.DataTypeOpenGraph
 	}
+
 	return p, err
 }
 
@@ -442,6 +445,8 @@ func (v *Validator) parseLoop() error {
 				v.opengraphData.MetadataFound = true
 				v.opengraphData.Metadata = metadata
 				return nil
+			case "graph":
+				v.opengraphData.GraphFound = true
 			default:
 			}
 		}

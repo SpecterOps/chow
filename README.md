@@ -28,12 +28,12 @@ Want to add the OpenGraph schema to your JSON document?
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/SpecterOps/chow/refs/heads/main/pkg/validator/jsonschema/payload-schema.json"
+  "$schema": "https://raw.githubusercontent.com/SpecterOps/chow/refs/heads/main/pkg/payload/jsonschema/schema.json"
 }
 ```
 
 Most editors will ask you to trust the schema's source. Be sure to add the following URL to your trusted domains
 
 ```text
-https://raw.githubusercontent.com/SpecterOps/chow/refs/heads/main/pkg/validator/jsonschema/
+https://raw.githubusercontent.com/SpecterOps/chow/refs/heads/main/pkg/payload/jsonschema/
 ```

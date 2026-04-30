@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0
-package validator
+package payload
 
 import (
 	"bytes"
@@ -26,14 +26,14 @@ import (
 //go:embed jsonschema
 var schemaFiles embed.FS
 
-type IngestSchema struct {
+type Schema struct {
 	NodeSchema *jsonschema.Schema
 	EdgeSchema *jsonschema.Schema
 	MetaSchema *jsonschema.Schema
 }
 
-func LoadIngestSchema() (IngestSchema, error) {
-	var schema IngestSchema
+func LoadSchema() (Schema, error) {
+	var schema Schema
 	if nodeSchema, err := loadSchema("node.json"); err != nil {
 		return schema, err
 	} else if edgeSchema, err := loadSchema("edge.json"); err != nil {

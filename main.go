@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/specterops/chow/pkg/validator"
+	"github.com/specterops/chow/pkg/payload"
 )
 
 var (
@@ -40,13 +40,13 @@ func main() {
 	}
 	defer reader.Close()
 
-	jsonSchema, err := validator.LoadIngestSchema()
+	jsonSchema, err := payload.LoadSchema()
 	if err != nil {
 		slog.Error("Failed to load ingest schema", slog.String("err", err.Error()))
 		os.Exit(1)
 	}
 
-	v := validator.NewValidator(reader, jsonSchema)
+	v := payload.NewValidator(reader, jsonSchema)
 
 	_, report, err := v.ParseAndValidate()
 	validationFailed := err != nil
@@ -76,7 +76,7 @@ func main() {
 	}
 }
 
-func outputReport(w io.WriteCloser, report validator.ValidationReport) error {
+func outputReport(w io.WriteCloser, report payload.ValidationReport) error {
 	for _, e := range report.CriticalErrors {
 		_, err := w.Write([]byte(formatCriticalError(e)))
 		if err != nil {
@@ -108,11 +108,11 @@ func outputReport(w io.WriteCloser, report validator.ValidationReport) error {
 	return nil
 }
 
-func formatCriticalError(e validator.CriticalError) string {
+func formatCriticalError(e payload.CriticalError) string {
 	return fmt.Sprintf("CRITICAL ERROR:\n%s\n%v", e.Message, e.Error)
 }
 
-func formatValidationError(valErr validator.ValidationError) (string, error) {
+func formatValidationError(valErr payload.ValidationError) (string, error) {
 	var (
 		sb       strings.Builder
 		objBytes bytes.Buffer
