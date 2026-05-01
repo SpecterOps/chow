@@ -402,3 +402,106 @@ func Test_ParseAndValidate(t *testing.T) {
 		})
 	}
 }
+
+type parseMetadataAssertion struct {
+	name               string
+	payload            string
+	expectedParsedData payload.ParsedData
+	errValidationFunc  func(t *testing.T, err error)
+}
+
+func Test_ParseMetadata(t *testing.T) {
+	assertions := []parseMetadataAssertion{
+		{
+			name:    "legacy metadata",
+			payload: `{"meta":{"methods":0,"type":"sessions","count":0,"version":5},"data":[]}`,
+			expectedParsedData: payload.ParsedData{
+				PayloadType:    ingest.DataTypeSession,
+				LegacyMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5},
+			},
+			errValidationFunc: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			name:    "legacy metadata after data",
+			payload: `{"data":[],"meta":{"methods":0,"type":"sessions","count":0,"version":5}}`,
+			expectedParsedData: payload.ParsedData{
+				PayloadType:    ingest.DataTypeSession,
+				LegacyMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5},
+			},
+			errValidationFunc: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			name:    "opengraph metadata",
+			payload: `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[]}}`,
+			expectedParsedData: payload.ParsedData{
+				PayloadType: ingest.DataTypeOpenGraph,
+				OpengraphData: payload.ParsedOpenGraphData{
+					Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"},
+				},
+			},
+			errValidationFunc: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			name:    "opengraph graph only",
+			payload: `{"graph":{"nodes":[]}}`,
+			expectedParsedData: payload.ParsedData{
+				PayloadType: ingest.DataTypeOpenGraph,
+			},
+			errValidationFunc: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			name:    "opengraph metadata after graph",
+			payload: `{"graph":{"nodes":[]},"metadata":{"source_kind":"hellobase"}}`,
+			expectedParsedData: payload.ParsedData{
+				PayloadType: ingest.DataTypeOpenGraph,
+				OpengraphData: payload.ParsedOpenGraphData{
+					Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"},
+				},
+			},
+			errValidationFunc: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			name:               "invalid top level json",
+			payload:            `[]`,
+			expectedParsedData: payload.ParsedData{},
+			errValidationFunc: func(t *testing.T, err error) {
+				assert.ErrorContains(t, err, "expected open bracket")
+			},
+		},
+	}
+
+	schema, err := payload.LoadSchema()
+	require.NoError(t, err)
+
+	for _, assertion := range assertions {
+		t.Run(assertion.name, func(t *testing.T) {
+			v := payload.NewValidator(strings.NewReader(assertion.payload), schema)
+
+			parsedData, err := v.ParseMetadata()
+			assert.Equal(t, assertion.expectedParsedData, parsedData)
+			assertion.errValidationFunc(t, err)
+		})
+	}
+}
+
+func TestValidationError_Error(t *testing.T) {
+	validationErr := payload.ValidationError{
+		Location: "/graph/nodes[0]",
+		Errors: []payload.ValidationErrorDetail{
+			{Location: "/id", Error: "got number, want string"},
+			{Location: "/properties/items", Error: "invalid type"},
+		},
+	}
+
+	assert.Equal(t, "validation error at /graph/nodes[0]: /id: got number, want string; /properties/items: invalid type", validationErr.Error())
+}

@@ -104,6 +104,31 @@ type ValidationError struct {
 	Errors    []ValidationErrorDetail
 }
 
+func (s ValidationError) Error() string {
+	var (
+		details = make([]string, 0, len(s.Errors))
+		message = "validation error"
+	)
+
+	if s.Location != "" {
+		message = fmt.Sprintf("%s at %s", message, s.Location)
+	}
+
+	for _, validationErrorDetail := range s.Errors {
+		if validationErrorDetail.Location != "" {
+			details = append(details, fmt.Sprintf("%s: %s", validationErrorDetail.Location, validationErrorDetail.Error))
+		} else if validationErrorDetail.Error != "" {
+			details = append(details, validationErrorDetail.Error)
+		}
+	}
+
+	if len(details) > 0 {
+		message = fmt.Sprintf("%s: %s", message, strings.Join(details, "; "))
+	}
+
+	return message
+}
+
 type ValidationErrorDetail struct {
 	Location string
 	Error    string
