@@ -116,6 +116,38 @@ func Test_ParseAndValidate(t *testing.T) {
 			},
 		},
 		{
+			name:               "unsuccessful opengraph payload, node kind tag prefix validation error",
+			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[{"id":"TESTNODE","kinds":["Tag_Admin"]}]}}`,
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
+			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
+				assert.ErrorIs(t, err, payload.ErrValidationErrors)
+
+				assert.ElementsMatch(t, report.ValidationErrors, []payload.ValidationError{
+					{
+						Location:  "/graph/nodes[0]",
+						RawObject: `{"id":"TESTNODE","kinds":["Tag_Admin"]}`,
+						Errors:    []payload.ValidationErrorDetail{{Location: "/kinds/0", Error: "'not' failed"}},
+					},
+				})
+			},
+		},
+		{
+			name:               "unsuccessful opengraph payload, node kind standalone tag validation error",
+			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[{"id":"TESTNODE","kinds":["tAg"]}]}}`,
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
+			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
+				assert.ErrorIs(t, err, payload.ErrValidationErrors)
+
+				assert.ElementsMatch(t, report.ValidationErrors, []payload.ValidationError{
+					{
+						Location:  "/graph/nodes[0]",
+						RawObject: `{"id":"TESTNODE","kinds":["tAg"]}`,
+						Errors:    []payload.ValidationErrorDetail{{Location: "/kinds/0", Error: "'not' failed"}},
+					},
+				})
+			},
+		},
+		{
 			name:               "unsuccessful opengraph payload, node properties validation error",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[{"id":"TESTNODE","kinds":["User"],"properties":{"items":{}}}]}}`,
 			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
@@ -220,6 +252,54 @@ func Test_ParseAndValidate(t *testing.T) {
 						Location:  "/graph/edges[0]",
 						RawObject: `{"start":{"value":1},"end":{"value":"TESTNODE2"},"kind":"RELATED","properties":{"items":["hi"]}}`,
 						Errors:    []payload.ValidationErrorDetail{{Location: "/start/value", Error: "got number, want string"}},
+					},
+				})
+			},
+		},
+		{
+			name:               "unsuccessful opengraph payload, edge kind tag prefix validation error",
+			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"edges":[{"start":{"value":"TESTNODE"},"end":{"value":"TESTNODE2"},"kind":"TAG_Admin"}]}}`,
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
+				assert.ErrorIs(t, err, payload.ErrValidationErrors)
+
+				assert.ElementsMatch(t, report.ValidationErrors, []payload.ValidationError{
+					{
+						Location:  "/graph/edges[0]",
+						RawObject: `{"start":{"value":"TESTNODE"},"end":{"value":"TESTNODE2"},"kind":"TAG_Admin"}`,
+						Errors:    []payload.ValidationErrorDetail{{Location: "/kind", Error: "'not' failed"}},
+					},
+				})
+			},
+		},
+		{
+			name:               "unsuccessful opengraph payload, edge kind standalone tag validation error",
+			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"edges":[{"start":{"value":"TESTNODE"},"end":{"value":"TESTNODE2"},"kind":"TaG"}]}}`,
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
+				assert.ErrorIs(t, err, payload.ErrValidationErrors)
+
+				assert.ElementsMatch(t, report.ValidationErrors, []payload.ValidationError{
+					{
+						Location:  "/graph/edges[0]",
+						RawObject: `{"start":{"value":"TESTNODE"},"end":{"value":"TESTNODE2"},"kind":"TaG"}`,
+						Errors:    []payload.ValidationErrorDetail{{Location: "/kind", Error: "'not' failed"}},
+					},
+				})
+			},
+		},
+		{
+			name:               "unsuccessful opengraph payload, edge endpoint kind tag prefix validation error",
+			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"edges":[{"start":{"value":"TESTNODE","kind":"tag_Admin"},"end":{"value":"TESTNODE2"},"kind":"RELATED"}]}}`,
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
+				assert.ErrorIs(t, err, payload.ErrValidationErrors)
+
+				assert.ElementsMatch(t, report.ValidationErrors, []payload.ValidationError{
+					{
+						Location:  "/graph/edges[0]",
+						RawObject: `{"start":{"value":"TESTNODE","kind":"tag_Admin"},"end":{"value":"TESTNODE2"},"kind":"RELATED"}`,
+						Errors:    []payload.ValidationErrorDetail{{Location: "/start/kind", Error: "'not' failed"}},
 					},
 				})
 			},
