@@ -120,18 +120,26 @@ func formatValidationError(valErr payload.ValidationError) (string, error) {
 
 	sb.WriteString("VALIDATION ERROR:\n")
 
-	sb.WriteString("Location: " + valErr.Location + "\n")
+	sb.WriteString("Location: ")
+	sb.WriteString(valErr.Location)
+	sb.WriteString("\n")
 
 	err := json.Indent(&objBytes, []byte(valErr.RawObject), "", "\t")
 	if err != nil {
 		return "", err
 	}
 
-	sb.WriteString("Object:\n" + objBytes.String() + "\n")
+	sb.WriteString("Object:\n")
+	sb.WriteString(objBytes.String())
+	sb.WriteString("\n")
 
 	sb.WriteString("Errors:\n")
 	for _, e := range valErr.Errors {
-		sb.WriteString("at " + e.Location + ": " + e.Error + "\n")
+		sb.WriteString("at ")
+		sb.WriteString(e.Location)
+		sb.WriteString(": ")
+		sb.WriteString(e.Error)
+		sb.WriteString("\n")
 	}
 
 	return sb.String(), nil
