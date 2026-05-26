@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"io/fs"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
@@ -49,6 +50,10 @@ func LoadSchema() (Schema, error) {
 }
 
 func loadSchema(filename string) (*jsonschema.Schema, error) {
+	return loadSchemaFromFS(schemaFiles, filename)
+}
+
+func loadSchemaFromFS(schemaFS fs.FS, filename string) (*jsonschema.Schema, error) {
 	var (
 		schemaDir = "jsonschema"
 		compiler  = jsonschema.NewCompiler()
@@ -56,7 +61,7 @@ func loadSchema(filename string) (*jsonschema.Schema, error) {
 
 	// Read the raw JSON schema file from embed.FS
 	path := fmt.Sprintf("%s/%s", schemaDir, filename)
-	if data, err := schemaFiles.ReadFile(path); err != nil {
+	if data, err := fs.ReadFile(schemaFS, path); err != nil {
 		return nil, fmt.Errorf("failed to read schema %q: %w", path, err)
 	} else if document, err := jsonschema.UnmarshalJSON(bytes.NewReader(data)); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal schema %q: %w", path, err)
