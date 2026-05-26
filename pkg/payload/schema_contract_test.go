@@ -65,6 +65,11 @@ func TestNodeJSONSchemaContract(t *testing.T) {
 			valid: true,
 		},
 		{
+			name:  "punctuation is allowed in property names",
+			raw:   `{"id":"node-1","kinds":["Device"],"properties":{"display.name":"alpha","risk-score":1.5,"source/vendor":"acme","observed@time":"today"}}`,
+			valid: true,
+		},
+		{
 			name:  "null properties",
 			raw:   `{"id":"node-1","kinds":["Location"],"properties":null}`,
 			valid: true,
@@ -90,7 +95,7 @@ func TestNodeJSONSchemaContract(t *testing.T) {
 			valid: false,
 		},
 		{
-			name:  "property name must be lowercase",
+			name:  "property name must not contain uppercase letters",
 			raw:   `{"id":"node-1","kinds":["User"],"properties":{"DisplayName":"Alice"}}`,
 			valid: false,
 		},
@@ -120,6 +125,11 @@ func TestEdgeJSONSchemaContract(t *testing.T) {
 		{
 			name:  "id endpoints",
 			raw:   `{"start":{"value":"node-1"},"end":{"value":"node-2"},"kind":"RELATED","properties":{"since":"today","weight":1,"active":true,"labels":["a"]}}`,
+			valid: true,
+		},
+		{
+			name:  "punctuation is allowed in property names",
+			raw:   `{"start":{"value":"node-1"},"end":{"value":"node-2"},"kind":"RELATED","properties":{"display.name":"alpha","risk-score":1.5,"source/vendor":"acme","observed@time":"today"}}`,
 			valid: true,
 		},
 		{
@@ -198,7 +208,7 @@ func TestEdgeJSONSchemaContract(t *testing.T) {
 			valid: false,
 		},
 		{
-			name:  "property name must be lowercase",
+			name:  "property name must not contain uppercase letters",
 			raw:   `{"start":{"value":"node-1"},"end":{"value":"node-2"},"kind":"RELATED","properties":{"DisplayName":"Alice"}}`,
 			valid: false,
 		},

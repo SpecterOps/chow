@@ -5,9 +5,11 @@
   "$defs": {
     "property_map": {
       "type": ["object", "null"],
-      "description": "A key-value map of edge attributes. Property names must contain only lowercase letters, numbers, and underscores. Values must not be objects. If a value is an array, it must contain only primitive types (e.g., strings, numbers, booleans) and must be homogeneous (all items must be of the same type).",
+      "description": "A key-value map of edge attributes. Property names must not contain uppercase letters. Values must not be objects. If a value is an array, it must contain only primitive types (e.g., strings, numbers, booleans) and must be homogeneous (all items must be of the same type).",
       "propertyNames": {
-        "pattern": "^[a-z0-9_]+$"
+        "not": {
+          "pattern": "[A-Z]"
+        }
       },
       "additionalProperties": {
         "anyOf": [
