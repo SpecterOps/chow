@@ -2,12 +2,23 @@ package main
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/specterops/chow/pkg/payload"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+var errWriteFailed = errors.New("write failed")
+
+type failingWriter struct{}
+
+func (failingWriter) Write([]byte) (int, error) {
+	return 0, errWriteFailed
+}
 
 func TestSummarizeDurations(t *testing.T) {
 	summary := summarizeDurations([]time.Duration{
@@ -19,6 +30,15 @@ func TestSummarizeDurations(t *testing.T) {
 	assert.Equal(t, 2*time.Millisecond, summary.Avg)
 	assert.Equal(t, time.Millisecond, summary.Min)
 	assert.Equal(t, 3*time.Millisecond, summary.Max)
+}
+
+func TestRunReturnsWriteError(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "payload.json")
+	require.NoError(t, os.WriteFile(file, []byte(`{"graph":{"nodes":[]}}`), 0o600))
+
+	err := run(failingWriter{}, []string{file}, 1, 0, false)
+
+	assert.ErrorIs(t, err, errWriteFailed)
 }
 
 func TestSummarizeDurationsEmpty(t *testing.T) {
@@ -119,4 +139,10 @@ func TestExitErrorForResults(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestWriteResultsReturnsWriteError(t *testing.T) {
+	err := writeResults(failingWriter{}, []benchmarkResult{{File: "payload.json", Status: "ok"}})
+
+	assert.ErrorIs(t, err, errWriteFailed)
 }

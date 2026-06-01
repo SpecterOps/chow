@@ -69,7 +69,9 @@ func run(w io.Writer, files []string, runs int, warmup int, strict bool) error {
 		results = append(results, result)
 	}
 
-	writeResults(w, results)
+	if err := writeResults(w, results); err != nil {
+		return err
+	}
 	return exitErrorForResults(results, strict)
 }
 
@@ -179,11 +181,13 @@ func exitErrorForResults(results []benchmarkResult, strict bool) error {
 	return nil
 }
 
-func writeResults(w io.Writer, results []benchmarkResult) {
+func writeResults(w io.Writer, results []benchmarkResult) error {
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, "file\tbytes\truns\tstatus\tavg\tmin\tmax\tcritical\tvalidation\terror")
+	if _, err := fmt.Fprintln(tw, "file\tbytes\truns\tstatus\tavg\tmin\tmax\tcritical\tvalidation\terror"); err != nil {
+		return err
+	}
 	for _, result := range results {
-		fmt.Fprintf(
+		if _, err := fmt.Fprintf(
 			tw,
 			"%s\t%d\t%d\t%s\t%s\t%s\t%s\t%d\t%d\t%s\n",
 			result.File,
@@ -196,7 +200,9 @@ func writeResults(w io.Writer, results []benchmarkResult) {
 			result.CriticalErrors,
 			result.ValidationErrors,
 			result.Error,
-		)
+		); err != nil {
+			return err
+		}
 	}
-	tw.Flush()
+	return tw.Flush()
 }
