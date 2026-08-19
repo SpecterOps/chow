@@ -145,16 +145,12 @@ func Test_ParseAndValidateOpenGraphNodes(t *testing.T) {
 			},
 		},
 		{
-			name:               "unsuccessful opengraph payload, node property name validation error",
+			name:               "successful opengraph payload with uppercase node property name",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[{"id":"TESTNODE","kinds":["User"],"properties":{"DisplayName":"Alice"}}]}}`,
 			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
-				assert.ErrorIs(t, err, payload.ErrValidationErrors)
-
-				require.Len(t, report.ValidationErrors, 1)
-				assert.Equal(t, "/graph/nodes[0]", report.ValidationErrors[0].Location)
-				assert.Equal(t, `{"id":"TESTNODE","kinds":["User"],"properties":{"DisplayName":"Alice"}}`, report.ValidationErrors[0].RawObject)
-				assert.NotEmpty(t, report.ValidationErrors[0].Errors)
+				assert.Equal(t, emptyValidationReport, report)
+				assert.NoError(t, err)
 			},
 		},
 		{
@@ -280,16 +276,12 @@ func Test_ParseAndValidateOpenGraphEdges(t *testing.T) {
 			},
 		},
 		{
-			name:               "unsuccessful opengraph payload, edge property name validation error",
+			name:               "successful opengraph payload with uppercase edge property name",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[],"edges":[{"start":{"value":"TESTNODE"},"end":{"value":"TESTNODE2"},"kind":"RELATED","properties":{"DisplayName":"Alice"}}]}}`,
 			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
-				assert.ErrorIs(t, err, payload.ErrValidationErrors)
-
-				require.Len(t, report.ValidationErrors, 1)
-				assert.Equal(t, "/graph/edges[0]", report.ValidationErrors[0].Location)
-				assert.Equal(t, `{"start":{"value":"TESTNODE"},"end":{"value":"TESTNODE2"},"kind":"RELATED","properties":{"DisplayName":"Alice"}}`, report.ValidationErrors[0].RawObject)
-				assert.NotEmpty(t, report.ValidationErrors[0].Errors)
+				assert.Equal(t, emptyValidationReport, report)
+				assert.NoError(t, err)
 			},
 		},
 		{

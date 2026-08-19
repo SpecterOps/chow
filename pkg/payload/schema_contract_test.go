@@ -95,9 +95,9 @@ func TestNodeJSONSchemaContract(t *testing.T) {
 			valid: false,
 		},
 		{
-			name:  "property name must not contain uppercase letters",
+			name:  "uppercase letters are allowed in property names",
 			raw:   `{"id":"node-1","kinds":["User"],"properties":{"DisplayName":"Alice"}}`,
-			valid: false,
+			valid: true,
 		},
 		{
 			name:  "objectid property is reserved",
@@ -208,9 +208,9 @@ func TestEdgeJSONSchemaContract(t *testing.T) {
 			valid: false,
 		},
 		{
-			name:  "property name must not contain uppercase letters",
+			name:  "uppercase letters are allowed in property names",
 			raw:   `{"start":{"value":"node-1"},"end":{"value":"node-2"},"kind":"RELATED","properties":{"DisplayName":"Alice"}}`,
-			valid: false,
+			valid: true,
 		},
 		{
 			name:  "property value cannot be an object",
