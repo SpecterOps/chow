@@ -138,6 +138,11 @@ func TestEdgeJSONSchemaContract(t *testing.T) {
 			valid: true,
 		},
 		{
+			name:  "objectid property is allowed on edges",
+			raw:   `{"start":{"value":"node-1"},"end":{"value":"node-2"},"kind":"RELATED","properties":{"objectid":"edge-1"}}`,
+			valid: true,
+		},
+		{
 			name:  "endpoint kind filter",
 			raw:   `{"start":{"value":"node-1","kind":"User"},"end":{"value":"node-2","kind":"Computer"},"kind":"admin_to"}`,
 			valid: true,
