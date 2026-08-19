@@ -433,7 +433,7 @@ func Test_ParseAndValidateOriginalPayloads(t *testing.T) {
 		{
 			name:               "successful original payload",
 			payload:            `{"meta":{"methods": 0,"type":"sessions","count": 0,"version": 5},"data":[]}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeSession, LegacyMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeSession, OriginalMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
@@ -442,7 +442,7 @@ func Test_ParseAndValidateOriginalPayloads(t *testing.T) {
 		{
 			name:               "unsuccessful original payload, no data tag",
 			payload:            `{"meta":{"methods": 0,"type":"sessions","count": 0,"version":5}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeSession, LegacyMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeSession, OriginalMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrInvalidFileConfiguration)
 
@@ -462,7 +462,7 @@ func Test_ParseAndValidateOriginalPayloads(t *testing.T) {
 		{
 			name:               "unsuccessful original payload, duplicate meta tag",
 			payload:            `{"meta":{"methods":0,"type":"sessions","count":0,"version":5},"meta":0,"data":[]}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeSession, LegacyMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeSession, OriginalMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrInvalidFileConfiguration)
 
@@ -488,7 +488,7 @@ func Test_ParseAndValidateOriginalPayloads(t *testing.T) {
 		{
 			name:               "swapped order",
 			payload:            `{"data":[],"meta":{"methods":0,"type":"sessions","count":0,"version":5}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeSession, LegacyMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeSession, OriginalMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
@@ -795,7 +795,7 @@ func Test_ParseMetadata(t *testing.T) {
 			payload: `{"meta":{"methods":0,"type":"sessions","count":0,"version":5},"data":[]}`,
 			expectedParsedData: payload.ParsedData{
 				PayloadType:    ingest.DataTypeSession,
-				LegacyMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5},
+				OriginalMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5},
 			},
 			errValidationFunc: func(t *testing.T, err error) {
 				assert.NoError(t, err)
@@ -806,7 +806,7 @@ func Test_ParseMetadata(t *testing.T) {
 			payload: `{"data":[],"meta":{"methods":0,"type":"sessions","count":0,"version":5}}`,
 			expectedParsedData: payload.ParsedData{
 				PayloadType:    ingest.DataTypeSession,
-				LegacyMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5},
+				OriginalMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5},
 			},
 			errValidationFunc: func(t *testing.T, err error) {
 				assert.NoError(t, err)

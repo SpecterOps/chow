@@ -137,7 +137,9 @@ type ValidationErrorDetail struct {
 type ParsedData struct {
 	PayloadType ingest.DataType
 
-	LegacyMetadata ingest.OriginalMetadata
+	// SharpHound and AzureHound Style Metadata
+	OriginalMetadata ingest.OriginalMetadata
+	// OpenGraph Style Metadata
 	OpengraphData  ParsedOpenGraphData
 }
 
@@ -171,7 +173,7 @@ func (v *Validator) buildValidatedData() ParsedData {
 
 	if v.originalData.MetadataFound {
 		p.PayloadType = v.originalData.Metadata.Type
-		p.LegacyMetadata = v.originalData.Metadata
+		p.OriginalMetadata = v.originalData.Metadata
 	}
 
 	return p
@@ -305,7 +307,7 @@ func (v *Validator) ParseMetadata() (ParsedData, error) {
 	switch {
 	case v.originalData.MetadataFound:
 		p.PayloadType = v.originalData.Metadata.Type
-		p.LegacyMetadata = v.originalData.Metadata
+		p.OriginalMetadata = v.originalData.Metadata
 	case v.opengraphData.MetadataFound:
 		p.PayloadType = ingest.DataTypeOpenGraph
 		p.OpengraphData.Metadata = v.opengraphData.Metadata
