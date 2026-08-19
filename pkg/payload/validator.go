@@ -36,6 +36,13 @@ var (
 	ErrInvalidDataType             = errors.New("invalid data type")
 )
 
+const (
+	delimOpenObject  = json.Delim('{')
+	delimCloseObject = json.Delim('}')
+	delimOpenArray   = json.Delim('[')
+	delimCloseArray  = json.Delim(']')
+)
+
 // Validator Definitions --------------------------------------------------------------------------
 
 type Validator struct {
@@ -140,7 +147,7 @@ type ParsedData struct {
 	// SharpHound and AzureHound Style Metadata
 	OriginalMetadata ingest.OriginalMetadata
 	// OpenGraph Style Metadata
-	OpengraphData  ParsedOpenGraphData
+	OpengraphData ParsedOpenGraphData
 }
 
 type ParsedOpenGraphData struct {
@@ -710,7 +717,7 @@ func (v *Validator) skipValue() error {
 	}
 
 	delimiter, isDelimiter := token.(json.Delim)
-	if !isDelimiter || (delimiter != ingest.DelimOpenBracket && delimiter != ingest.DelimOpenSquareBracket) {
+	if !isDelimiter || (delimiter != delimOpenObject && delimiter != delimOpenArray) {
 		return nil
 	}
 
@@ -730,7 +737,7 @@ func (v *Validator) enterObject() error {
 		return err
 	}
 
-	if delim, ok := t.(json.Delim); !ok || delim != ingest.DelimOpenBracket {
+	if delim, ok := t.(json.Delim); !ok || delim != delimOpenObject {
 		return fmt.Errorf("expected open bracket")
 	}
 
@@ -744,7 +751,7 @@ func (v *Validator) enterArray() error {
 		return err
 	}
 
-	if delim, ok := t.(json.Delim); !ok || delim != ingest.DelimOpenSquareBracket {
+	if delim, ok := t.(json.Delim); !ok || delim != delimOpenArray {
 		return fmt.Errorf("expected open square bracket")
 	}
 
@@ -784,9 +791,9 @@ func (v *Validator) nextToken() (json.Token, error) {
 	}
 
 	if d, ok := tok.(json.Delim); ok {
-		if d == ingest.DelimOpenBracket || d == ingest.DelimOpenSquareBracket {
+		if d == delimOpenObject || d == delimOpenArray {
 			v.depth++
-		} else {
+		} else if d == delimCloseObject || d == delimCloseArray {
 			v.depth--
 		}
 	}
