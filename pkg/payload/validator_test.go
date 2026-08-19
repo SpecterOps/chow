@@ -67,7 +67,7 @@ func Test_ParseAndValidateOpenGraphPayloads(t *testing.T) {
 		{
 			name:               "successful opengraph payload",
 			payload:            `{"metadata":{},"graph":{"nodes":[]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
@@ -85,7 +85,7 @@ func Test_ParseAndValidateOpenGraphPayloads(t *testing.T) {
 		{
 			name:               "successful opengraph metadata",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
@@ -94,7 +94,7 @@ func Test_ParseAndValidateOpenGraphPayloads(t *testing.T) {
 		{
 			name:               "successful opengraph payload with $schema",
 			payload:            `{"$schema":"test","metadata":{"source_kind":"hellobase"},"graph":{"nodes":[]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
@@ -103,7 +103,7 @@ func Test_ParseAndValidateOpenGraphPayloads(t *testing.T) {
 		{
 			name:               "unsuccessful opengraph metadata",
 			payload:            `{"metadata":{"source_kind":1},"graph":{"nodes":[]}}`,
-			expectedParsedData: payload.ParsedData{},
+			expectedParsedData: payload.ParsedData{OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrOpengraphMetadataValidation)
 
@@ -123,7 +123,7 @@ func Test_ParseAndValidateOpenGraphPayloads(t *testing.T) {
 		{
 			name:               "unsuccessful opengraph metadata, invalid field",
 			payload:            `{"metadata":{"random field":"hello"},"graph":{"nodes":[]}}`,
-			expectedParsedData: payload.ParsedData{},
+			expectedParsedData: payload.ParsedData{OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrOpengraphMetadataValidation)
 
@@ -138,7 +138,7 @@ func Test_ParseAndValidateOpenGraphNodes(t *testing.T) {
 		{
 			name:               "successful opengraph payload with node",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[{"id":"TESTNODE","kinds":["User"],"properties":{"items":["hi"]}}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
@@ -147,7 +147,7 @@ func Test_ParseAndValidateOpenGraphNodes(t *testing.T) {
 		{
 			name:               "successful opengraph payload with uppercase node property name",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[{"id":"TESTNODE","kinds":["User"],"properties":{"DisplayName":"Alice"}}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
@@ -156,7 +156,7 @@ func Test_ParseAndValidateOpenGraphNodes(t *testing.T) {
 		{
 			name:               "unsuccessful opengraph payload, node id validation error",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[{"id":1,"kinds":["User"]}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrValidationErrors)
 
@@ -172,7 +172,7 @@ func Test_ParseAndValidateOpenGraphNodes(t *testing.T) {
 		{
 			name:               "unsuccessful opengraph payload, node kinds validation error",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[{"id":"TESTNODE","kinds":["User", 1]}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrValidationErrors)
 
@@ -188,7 +188,7 @@ func Test_ParseAndValidateOpenGraphNodes(t *testing.T) {
 		{
 			name:               "unsuccessful opengraph payload, node kind tag prefix validation error",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[{"id":"TESTNODE","kinds":["Tag_Admin"]}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrValidationErrors)
 
@@ -204,7 +204,7 @@ func Test_ParseAndValidateOpenGraphNodes(t *testing.T) {
 		{
 			name:               "unsuccessful opengraph payload, node kind standalone tag validation error",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[{"id":"TESTNODE","kinds":["tAg"]}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrValidationErrors)
 
@@ -220,7 +220,7 @@ func Test_ParseAndValidateOpenGraphNodes(t *testing.T) {
 		{
 			name:               "unsuccessful opengraph payload, node properties validation error",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[{"id":"TESTNODE","kinds":["User"],"properties":{"items":{}}}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrValidationErrors)
 
@@ -236,7 +236,7 @@ func Test_ParseAndValidateOpenGraphNodes(t *testing.T) {
 		{
 			name:               "successful opengraph payload, null node properties",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[{"id":"TESTNODE","kinds":["User"],"properties":null}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
@@ -245,7 +245,7 @@ func Test_ParseAndValidateOpenGraphNodes(t *testing.T) {
 		{
 			name:               "unsuccessful opengraph payload, reserved objectid node property",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[{"id":"TESTNODE","kinds":["User"],"properties":{"objectid":"node-1"}}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrValidationErrors)
 
@@ -261,7 +261,7 @@ func Test_ParseAndValidateOpenGraphNodes(t *testing.T) {
 		{
 			name:               "unsuccessful opengraph payload, node multiple validation errors",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[{"id":1,"kinds":["User"],"properties":{"items":{}}}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrValidationErrors)
 
@@ -274,7 +274,7 @@ func Test_ParseAndValidateOpenGraphNodes(t *testing.T) {
 		{
 			name:               "unsuccessful opengraph payload, exceeds max validation errors",
 			payload:            repeatedInvalidNodesPayload(17),
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 15}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 15}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrMaxValidationErrors)
 
@@ -294,7 +294,7 @@ func Test_ParseAndValidateOpenGraphEdges(t *testing.T) {
 		{
 			name:               "successful opengraph payload with edge",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[],"edges":[{"start":{"value":"TESTNODE"},"end":{"value":"TESTNODE2"},"kind":"RELATED","properties":{"items":["hi"]}}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
@@ -303,7 +303,7 @@ func Test_ParseAndValidateOpenGraphEdges(t *testing.T) {
 		{
 			name:               "successful opengraph payload with uppercase edge property name",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[],"edges":[{"start":{"value":"TESTNODE"},"end":{"value":"TESTNODE2"},"kind":"RELATED","properties":{"DisplayName":"Alice"}}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
@@ -312,7 +312,7 @@ func Test_ParseAndValidateOpenGraphEdges(t *testing.T) {
 		{
 			name:               "successful opengraph payload with edge property matching",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[],"edges":[{"start":{"match_by":"property","property_matchers":[{"key":"prop_1","operator":"equals","value":"ROHAN"}]},"end":{"match_by":"property","property_matchers":[{"key":"prop_1","operator":"equals","value":"WES"}]},"kind":"RELATED","properties":{"items":["hi"]}}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
@@ -321,7 +321,7 @@ func Test_ParseAndValidateOpenGraphEdges(t *testing.T) {
 		{
 			name:               "unsuccessful opengraph payload, edge properties validation error",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[],"edges":[{"start":{"value":"TESTNODE"},"end":{"value":"TESTNODE2"},"kind":"RELATED","properties":{"items":{}}}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrValidationErrors)
 
@@ -337,7 +337,7 @@ func Test_ParseAndValidateOpenGraphEdges(t *testing.T) {
 		{
 			name:               "successful opengraph payload, null edge properties",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[],"edges":[{"start":{"value":"TESTNODE"},"end":{"value":"TESTNODE2"},"kind":"RELATED","properties":null}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
@@ -346,7 +346,7 @@ func Test_ParseAndValidateOpenGraphEdges(t *testing.T) {
 		{
 			name:               "successful opengraph payload, objectid edge property",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[],"edges":[{"start":{"value":"TESTNODE"},"end":{"value":"TESTNODE2"},"kind":"RELATED","properties":{"objectid":"edge-1"}}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
@@ -355,7 +355,7 @@ func Test_ParseAndValidateOpenGraphEdges(t *testing.T) {
 		{
 			name:               "unsuccessful opengraph payload, edge id validation error",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[],"edges":[{"start":{"value":1},"end":{"value":"TESTNODE2"},"kind":"RELATED","properties":{"items":["hi"]}}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrValidationErrors)
 
@@ -371,7 +371,7 @@ func Test_ParseAndValidateOpenGraphEdges(t *testing.T) {
 		{
 			name:               "unsuccessful opengraph payload, edge kind tag prefix validation error",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"edges":[{"start":{"value":"TESTNODE"},"end":{"value":"TESTNODE2"},"kind":"TAG_Admin"}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrValidationErrors)
 
@@ -387,7 +387,7 @@ func Test_ParseAndValidateOpenGraphEdges(t *testing.T) {
 		{
 			name:               "unsuccessful opengraph payload, edge kind standalone tag validation error",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"edges":[{"start":{"value":"TESTNODE"},"end":{"value":"TESTNODE2"},"kind":"TaG"}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrValidationErrors)
 
@@ -403,7 +403,7 @@ func Test_ParseAndValidateOpenGraphEdges(t *testing.T) {
 		{
 			name:               "successful opengraph payload with reserved endpoint kind filters",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"edges":[{"start":{"value":"TESTNODE","kind":"tag_Admin"},"end":{"value":"TESTNODE2","kind":"TaG"},"kind":"RELATED"}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
@@ -412,7 +412,7 @@ func Test_ParseAndValidateOpenGraphEdges(t *testing.T) {
 		{
 			name:               "unsuccessful opengraph payload, invalid edge property matching",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[],"edges":[{"start":{"match_by":"property","property_matchers":{"key":"prop_1","operator":"equals","value":"ROHAN"}},"end":{"match_by":"property","property_matchers":[{"key":"prop_1","operator":"equals","value":"WES"}]},"kind":"RELATED","properties":{"items":["hi"]}}]}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true, Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrValidationErrors)
 
@@ -433,7 +433,7 @@ func Test_ParseAndValidateOriginalPayloads(t *testing.T) {
 		{
 			name:               "successful original payload",
 			payload:            `{"meta":{"methods": 0,"type":"sessions","count": 0,"version": 5},"data":[]}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeSession, OriginalMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeSession, OriginalData: payload.ParsedOriginalData{MetadataFound: true, Metadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
@@ -442,7 +442,7 @@ func Test_ParseAndValidateOriginalPayloads(t *testing.T) {
 		{
 			name:               "unsuccessful original payload, no data tag",
 			payload:            `{"meta":{"methods": 0,"type":"sessions","count": 0,"version":5}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeSession, OriginalMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeSession, OriginalData: payload.ParsedOriginalData{MetadataFound: true, Metadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrInvalidFileConfiguration)
 
@@ -462,7 +462,7 @@ func Test_ParseAndValidateOriginalPayloads(t *testing.T) {
 		{
 			name:               "unsuccessful original payload, duplicate meta tag",
 			payload:            `{"meta":{"methods":0,"type":"sessions","count":0,"version":5},"meta":0,"data":[]}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeSession, OriginalMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeSession, OriginalData: payload.ParsedOriginalData{MetadataFound: true, Metadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrInvalidFileConfiguration)
 
@@ -472,7 +472,7 @@ func Test_ParseAndValidateOriginalPayloads(t *testing.T) {
 		{
 			name:               "unsuccessful original payload, invalid meta",
 			payload:            `{"data":[],"meta":0}`,
-			expectedParsedData: payload.ParsedData{},
+			expectedParsedData: payload.ParsedData{OriginalData: payload.ParsedOriginalData{MetadataFound: true}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				require.Len(t, report.CriticalErrors, 1)
 				var (
@@ -488,7 +488,7 @@ func Test_ParseAndValidateOriginalPayloads(t *testing.T) {
 		{
 			name:               "swapped order",
 			payload:            `{"data":[],"meta":{"methods":0,"type":"sessions","count":0,"version":5}}`,
-			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeSession, OriginalMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeSession, OriginalData: payload.ParsedOriginalData{MetadataFound: true, Metadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5}}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
@@ -497,7 +497,7 @@ func Test_ParseAndValidateOriginalPayloads(t *testing.T) {
 		{
 			name:               "unsuccessful original payload, invalid type",
 			payload:            `{"data":[],"meta":{"methods":0,"type":"invalid","count":0,"version":5}}`,
-			expectedParsedData: payload.ParsedData{},
+			expectedParsedData: payload.ParsedData{OriginalData: payload.ParsedOriginalData{MetadataFound: true}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrInvalidDataType)
 
@@ -804,8 +804,11 @@ func Test_ParseMetadata(t *testing.T) {
 			name:    "legacy metadata",
 			payload: `{"meta":{"methods":0,"type":"sessions","count":0,"version":5},"data":[]}`,
 			expectedParsedData: payload.ParsedData{
-				PayloadType:    ingest.DataTypeSession,
-				OriginalMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5},
+				PayloadType: ingest.DataTypeSession,
+				OriginalData: payload.ParsedOriginalData{
+					MetadataFound: true,
+					Metadata:      ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5},
+				},
 			},
 			errValidationFunc: func(t *testing.T, err error) {
 				assert.NoError(t, err)
@@ -815,8 +818,11 @@ func Test_ParseMetadata(t *testing.T) {
 			name:    "legacy metadata after data",
 			payload: `{"data":[],"meta":{"methods":0,"type":"sessions","count":0,"version":5}}`,
 			expectedParsedData: payload.ParsedData{
-				PayloadType:    ingest.DataTypeSession,
-				OriginalMetadata: ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5},
+				PayloadType: ingest.DataTypeSession,
+				OriginalData: payload.ParsedOriginalData{
+					MetadataFound: true,
+					Metadata:      ingest.OriginalMetadata{Type: ingest.DataTypeSession, Methods: 0, Version: 5},
+				},
 			},
 			errValidationFunc: func(t *testing.T, err error) {
 				assert.NoError(t, err)
@@ -828,7 +834,34 @@ func Test_ParseMetadata(t *testing.T) {
 			expectedParsedData: payload.ParsedData{
 				PayloadType: ingest.DataTypeOpenGraph,
 				OpengraphData: payload.ParsedOpenGraphData{
-					Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"},
+					MetadataFound: true,
+					Metadata:      ingest.OpengraphMetadata{SourceKind: "hellobase"},
+				},
+			},
+			errValidationFunc: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			name:    "opengraph metadata with null source kind",
+			payload: `{"metadata":{"source_kind":null},"graph":{"nodes":[]}}`,
+			expectedParsedData: payload.ParsedData{
+				PayloadType: ingest.DataTypeOpenGraph,
+				OpengraphData: payload.ParsedOpenGraphData{
+					MetadataFound: true,
+				},
+			},
+			errValidationFunc: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			name:    "opengraph metadata with empty source kind",
+			payload: `{"metadata":{"source_kind":""},"graph":{"nodes":[]}}`,
+			expectedParsedData: payload.ParsedData{
+				PayloadType: ingest.DataTypeOpenGraph,
+				OpengraphData: payload.ParsedOpenGraphData{
+					MetadataFound: true,
 				},
 			},
 			errValidationFunc: func(t *testing.T, err error) {
@@ -851,7 +884,8 @@ func Test_ParseMetadata(t *testing.T) {
 			expectedParsedData: payload.ParsedData{
 				PayloadType: ingest.DataTypeOpenGraph,
 				OpengraphData: payload.ParsedOpenGraphData{
-					Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"},
+					MetadataFound: true,
+					Metadata:      ingest.OpengraphMetadata{SourceKind: "hellobase"},
 				},
 			},
 			errValidationFunc: func(t *testing.T, err error) {
@@ -869,7 +903,7 @@ func Test_ParseMetadata(t *testing.T) {
 		{
 			name:               "invalid legacy metadata",
 			payload:            `{"meta":0}`,
-			expectedParsedData: payload.ParsedData{},
+			expectedParsedData: payload.ParsedData{OriginalData: payload.ParsedOriginalData{MetadataFound: true}},
 			errValidationFunc: func(t *testing.T, err error) {
 				var unmarshalErr *json.UnmarshalTypeError
 
@@ -879,7 +913,7 @@ func Test_ParseMetadata(t *testing.T) {
 		{
 			name:               "invalid opengraph metadata",
 			payload:            `{"metadata":0}`,
-			expectedParsedData: payload.ParsedData{},
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{MetadataFound: true}},
 			errValidationFunc: func(t *testing.T, err error) {
 				var unmarshalErr *json.UnmarshalTypeError
 

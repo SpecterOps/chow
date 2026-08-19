@@ -145,12 +145,18 @@ type ParsedData struct {
 	PayloadType ingest.DataType
 
 	// SharpHound and AzureHound Style Metadata
-	OriginalMetadata ingest.OriginalMetadata
+	OriginalData ParsedOriginalData
 	// OpenGraph Style Metadata
 	OpengraphData ParsedOpenGraphData
 }
 
+type ParsedOriginalData struct {
+	MetadataFound bool
+	Metadata      ingest.OriginalMetadata
+}
+
 type ParsedOpenGraphData struct {
+	MetadataFound  bool
 	Metadata       ingest.OpengraphMetadata
 	NodesValidated int
 	EdgesValidated int
@@ -172,6 +178,7 @@ func (v *Validator) buildValidatedData() ParsedData {
 	}
 
 	if v.opengraphData.MetadataFound {
+		p.OpengraphData.MetadataFound = true
 		p.OpengraphData.Metadata = v.opengraphData.Metadata
 	}
 
@@ -180,7 +187,8 @@ func (v *Validator) buildValidatedData() ParsedData {
 
 	if v.originalData.MetadataFound {
 		p.PayloadType = v.originalData.Metadata.Type
-		p.OriginalMetadata = v.originalData.Metadata
+		p.OriginalData.MetadataFound = true
+		p.OriginalData.Metadata = v.originalData.Metadata
 	}
 
 	return p
@@ -314,9 +322,11 @@ func (v *Validator) ParseMetadata() (ParsedData, error) {
 	switch {
 	case v.originalData.MetadataFound:
 		p.PayloadType = v.originalData.Metadata.Type
-		p.OriginalMetadata = v.originalData.Metadata
+		p.OriginalData.MetadataFound = true
+		p.OriginalData.Metadata = v.originalData.Metadata
 	case v.opengraphData.MetadataFound:
 		p.PayloadType = ingest.DataTypeOpenGraph
+		p.OpengraphData.MetadataFound = true
 		p.OpengraphData.Metadata = v.opengraphData.Metadata
 	case v.opengraphData.GraphFound:
 		p.PayloadType = ingest.DataTypeOpenGraph
@@ -457,23 +467,25 @@ func (v *Validator) parseLoop() error {
 		} else {
 			switch tag {
 			case "meta":
+				v.originalData.MetadataFound = true
+
 				var metadata ingest.OriginalMetadata
 				if err := v.decoder.Decode(&metadata); err != nil {
 					v.reportCriticalError("failed to decode original metadata", err)
 					return err
 				}
 
-				v.originalData.MetadataFound = true
 				v.originalData.Metadata = metadata
 				return nil
 			case "metadata":
+				v.opengraphData.MetadataFound = true
+
 				var metadata ingest.OpengraphMetadata
 				if err := v.decoder.Decode(&metadata); err != nil {
 					v.reportCriticalError("failed to decode opengraph metadata", err)
 					return err
 				}
 
-				v.opengraphData.MetadataFound = true
 				v.opengraphData.Metadata = metadata
 				return nil
 			case "graph":
