@@ -17,6 +17,8 @@ package payload_test
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
@@ -65,9 +67,34 @@ func TestNodeJSONSchemaContract(t *testing.T) {
 			valid: true,
 		},
 		{
-			name:  "punctuation is allowed in property names",
-			raw:   `{"id":"node-1","kinds":["Device"],"properties":{"display.name":"alpha","risk-score":1.5,"source/vendor":"acme","observed@time":"today"}}`,
+			name:  "lowercase alphanumeric underscore and hyphen property name",
+			raw:   `{"id":"node-1","kinds":["Device"],"properties":{"lowercase_1-name":"alpha"}}`,
 			valid: true,
+		},
+		{
+			name:  "uppercase property name",
+			raw:   `{"id":"node-1","kinds":["User"],"properties":{"DisplayName":"Alice"}}`,
+			valid: false,
+		},
+		{
+			name:  "punctuation in property name",
+			raw:   `{"id":"node-1","kinds":["User"],"properties":{"display.name":"Alice"}}`,
+			valid: false,
+		},
+		{
+			name:  "empty property name",
+			raw:   `{"id":"node-1","kinds":["User"],"properties":{"":"Alice"}}`,
+			valid: false,
+		},
+		{
+			name:  "128 character property name",
+			raw:   fmt.Sprintf(`{"id":"node-1","kinds":["User"],"properties":{"%s":"Alice"}}`, strings.Repeat("a", 128)),
+			valid: true,
+		},
+		{
+			name:  "129 character property name",
+			raw:   fmt.Sprintf(`{"id":"node-1","kinds":["User"],"properties":{"%s":"Alice"}}`, strings.Repeat("a", 129)),
+			valid: false,
 		},
 		{
 			name:  "null properties",
@@ -93,11 +120,6 @@ func TestNodeJSONSchemaContract(t *testing.T) {
 			name:  "kind cannot use tag prefix",
 			raw:   `{"id":"node-1","kinds":["Tag_Admin"]}`,
 			valid: false,
-		},
-		{
-			name:  "uppercase letters are allowed in property names",
-			raw:   `{"id":"node-1","kinds":["User"],"properties":{"DisplayName":"Alice"}}`,
-			valid: true,
 		},
 		{
 			name:  "objectid property is reserved",
@@ -128,14 +150,64 @@ func TestEdgeJSONSchemaContract(t *testing.T) {
 			valid: true,
 		},
 		{
-			name:  "punctuation is allowed in property names",
-			raw:   `{"start":{"value":"node-1"},"end":{"value":"node-2"},"kind":"RELATED","properties":{"display.name":"alpha","risk-score":1.5,"source/vendor":"acme","observed@time":"today"}}`,
+			name:  "lowercase alphanumeric underscore and hyphen property name",
+			raw:   `{"start":{"value":"node-1"},"end":{"value":"node-2"},"kind":"RELATED","properties":{"lowercase_1-name":"alpha"}}`,
 			valid: true,
 		},
 		{
-			name:  "property matching endpoints",
-			raw:   `{"start":{"match_by":"property","property_matchers":[{"key":"name","operator":"equals","value":"Alice"}]},"end":{"match_by":"property","property_matchers":[{"key":"name","operator":"equals","value":"Bob"}]},"kind":"connected_to","properties":null}`,
+			name:  "uppercase property name",
+			raw:   `{"start":{"value":"node-1"},"end":{"value":"node-2"},"kind":"RELATED","properties":{"DisplayName":"Alice"}}`,
+			valid: false,
+		},
+		{
+			name:  "punctuation in property name",
+			raw:   `{"start":{"value":"node-1"},"end":{"value":"node-2"},"kind":"RELATED","properties":{"display.name":"Alice"}}`,
+			valid: false,
+		},
+		{
+			name:  "empty property name",
+			raw:   `{"start":{"value":"node-1"},"end":{"value":"node-2"},"kind":"RELATED","properties":{"":"Alice"}}`,
+			valid: false,
+		},
+		{
+			name:  "128 character property name",
+			raw:   fmt.Sprintf(`{"start":{"value":"node-1"},"end":{"value":"node-2"},"kind":"RELATED","properties":{"%s":"Alice"}}`, strings.Repeat("a", 128)),
 			valid: true,
+		},
+		{
+			name:  "129 character property name",
+			raw:   fmt.Sprintf(`{"start":{"value":"node-1"},"end":{"value":"node-2"},"kind":"RELATED","properties":{"%s":"Alice"}}`, strings.Repeat("a", 129)),
+			valid: false,
+		},
+		{
+			name:  "property matching endpoints",
+			raw:   `{"start":{"match_by":"property","property_matchers":[{"key":"display_name-1","operator":"equals","value":"Alice"}]},"end":{"match_by":"property","property_matchers":[{"key":"name","operator":"equals","value":"Bob"}]},"kind":"connected_to","properties":null}`,
+			valid: true,
+		},
+		{
+			name:  "uppercase property matcher key",
+			raw:   `{"start":{"match_by":"property","property_matchers":[{"key":"DisplayName","operator":"equals","value":"Alice"}]},"end":{"value":"node-2"},"kind":"RELATED"}`,
+			valid: false,
+		},
+		{
+			name:  "punctuation in property matcher key",
+			raw:   `{"start":{"match_by":"property","property_matchers":[{"key":"display.name","operator":"equals","value":"Alice"}]},"end":{"value":"node-2"},"kind":"RELATED"}`,
+			valid: false,
+		},
+		{
+			name:  "empty property matcher key",
+			raw:   `{"start":{"match_by":"property","property_matchers":[{"key":"","operator":"equals","value":"Alice"}]},"end":{"value":"node-2"},"kind":"RELATED"}`,
+			valid: false,
+		},
+		{
+			name:  "128 character property matcher key",
+			raw:   fmt.Sprintf(`{"start":{"match_by":"property","property_matchers":[{"key":"%s","operator":"equals","value":"Alice"}]},"end":{"value":"node-2"},"kind":"RELATED"}`, strings.Repeat("a", 128)),
+			valid: true,
+		},
+		{
+			name:  "129 character property matcher key",
+			raw:   fmt.Sprintf(`{"start":{"match_by":"property","property_matchers":[{"key":"%s","operator":"equals","value":"Alice"}]},"end":{"value":"node-2"},"kind":"RELATED"}`, strings.Repeat("a", 129)),
+			valid: false,
 		},
 		{
 			name:  "objectid property is allowed on edges",
@@ -211,11 +283,6 @@ func TestEdgeJSONSchemaContract(t *testing.T) {
 			name:  "property matcher value must be primitive",
 			raw:   `{"start":{"match_by":"property","property_matchers":[{"key":"name","operator":"equals","value":{"first":"Alice"}}]},"end":{"value":"node-2"},"kind":"RELATED"}`,
 			valid: false,
-		},
-		{
-			name:  "uppercase letters are allowed in property names",
-			raw:   `{"start":{"value":"node-1"},"end":{"value":"node-2"},"kind":"RELATED","properties":{"DisplayName":"Alice"}}`,
-			valid: true,
 		},
 		{
 			name:  "property value cannot be an object",

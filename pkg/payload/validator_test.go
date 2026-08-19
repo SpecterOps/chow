@@ -145,12 +145,16 @@ func Test_ParseAndValidateOpenGraphNodes(t *testing.T) {
 			},
 		},
 		{
-			name:               "successful opengraph payload with uppercase node property name",
+			name:               "unsuccessful opengraph payload, uppercase node property name",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[{"id":"TESTNODE","kinds":["User"],"properties":{"DisplayName":"Alice"}}]}}`,
 			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, NodesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
-				assert.Equal(t, emptyValidationReport, report)
-				assert.NoError(t, err)
+				assert.ErrorIs(t, err, payload.ErrValidationErrors)
+
+				require.Len(t, report.ValidationErrors, 1)
+				assert.Equal(t, "/graph/nodes[0]", report.ValidationErrors[0].Location)
+				assert.Equal(t, `{"id":"TESTNODE","kinds":["User"],"properties":{"DisplayName":"Alice"}}`, report.ValidationErrors[0].RawObject)
+				assert.NotEmpty(t, report.ValidationErrors[0].Errors)
 			},
 		},
 		{
@@ -301,12 +305,16 @@ func Test_ParseAndValidateOpenGraphEdges(t *testing.T) {
 			},
 		},
 		{
-			name:               "successful opengraph payload with uppercase edge property name",
+			name:               "unsuccessful opengraph payload, uppercase edge property name",
 			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[],"edges":[{"start":{"value":"TESTNODE"},"end":{"value":"TESTNODE2"},"kind":"RELATED","properties":{"DisplayName":"Alice"}}]}}`,
 			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
-				assert.Equal(t, emptyValidationReport, report)
-				assert.NoError(t, err)
+				assert.ErrorIs(t, err, payload.ErrValidationErrors)
+
+				require.Len(t, report.ValidationErrors, 1)
+				assert.Equal(t, "/graph/edges[0]", report.ValidationErrors[0].Location)
+				assert.Equal(t, `{"start":{"value":"TESTNODE"},"end":{"value":"TESTNODE2"},"kind":"RELATED","properties":{"DisplayName":"Alice"}}`, report.ValidationErrors[0].RawObject)
+				assert.NotEmpty(t, report.ValidationErrors[0].Errors)
 			},
 		},
 		{
@@ -316,6 +324,22 @@ func Test_ParseAndValidateOpenGraphEdges(t *testing.T) {
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.Equal(t, emptyValidationReport, report)
 				assert.NoError(t, err)
+			},
+		},
+		{
+			name:               "unsuccessful opengraph payload, uppercase property matcher key",
+			payload:            `{"metadata":{"source_kind":"hellobase"},"graph":{"nodes":[],"edges":[{"start":{"match_by":"property","property_matchers":[{"key":"DisplayName","operator":"equals","value":"ROHAN"}]},"end":{"value":"TESTNODE2"},"kind":"RELATED"}]}}`,
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph, OpengraphData: payload.ParsedOpenGraphData{Metadata: ingest.OpengraphMetadata{SourceKind: "hellobase"}, EdgesValidated: 1}},
+			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
+				assert.ErrorIs(t, err, payload.ErrValidationErrors)
+
+				assert.ElementsMatch(t, report.ValidationErrors, []payload.ValidationError{
+					{
+						Location:  "/graph/edges[0]",
+						RawObject: `{"start":{"match_by":"property","property_matchers":[{"key":"DisplayName","operator":"equals","value":"ROHAN"}]},"end":{"value":"TESTNODE2"},"kind":"RELATED"}`,
+						Errors:    []payload.ValidationErrorDetail{{Location: "/start/property_matchers/0/key", Error: "'DisplayName' does not match pattern '^[a-z0-9_-]{1,128}$'"}},
+					},
+				})
 			},
 		},
 		{
