@@ -241,11 +241,11 @@ func (v *Validator) recurringFileConfigCheck() error {
 }
 
 // finalFileConfigCheck() returns an error if the final state of the file has an invalid arrangement of tags. This
-// includes no tags at all and no graph tag being found to match an opengraph metadata tag. This is designed to be
-// run after the validationLoop has completed
+// includes no recognized payload tags and no graph tag being found to match an opengraph metadata tag. This is
+// designed to be run after the validationLoop has completed.
 func (v *Validator) finalFileConfigCheck() error {
 	if !v.originalData.MetadataFound && !v.originalData.DataFound && !v.opengraphData.MetadataFound && !v.opengraphData.GraphFound {
-		v.reportCriticalError("no tags found", ErrInvalidFileConfiguration)
+		v.reportCriticalError("no valid payload tags found", ErrInvalidFileConfiguration)
 		return ErrInvalidFileConfiguration
 	}
 

@@ -516,7 +516,17 @@ func Test_ParseAndValidateTopLevelPayloadErrors(t *testing.T) {
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
 				assert.ErrorIs(t, err, payload.ErrInvalidFileConfiguration)
 
-				assert.ElementsMatch(t, report.CriticalErrors, []payload.CriticalError{{Message: "no tags found", Error: payload.ErrInvalidFileConfiguration}})
+				assert.ElementsMatch(t, report.CriticalErrors, []payload.CriticalError{{Message: "no valid payload tags found", Error: payload.ErrInvalidFileConfiguration}})
+			},
+		},
+		{
+			name:               "unsuccessful payload, only unrecognized tags",
+			payload:            `{"name":"example","value":123}`,
+			expectedParsedData: payload.ParsedData{},
+			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
+				assert.ErrorIs(t, err, payload.ErrInvalidFileConfiguration)
+
+				assert.ElementsMatch(t, report.CriticalErrors, []payload.CriticalError{{Message: "no valid payload tags found", Error: payload.ErrInvalidFileConfiguration}})
 			},
 		},
 		{
