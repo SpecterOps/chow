@@ -530,13 +530,21 @@ func Test_ParseAndValidateTopLevelPayloadErrors(t *testing.T) {
 			},
 		},
 		{
-			name:               "unsuccessful payload, unrecognized top level tag",
-			payload:            `{"graph":{"nodes":[]},"pants":{}}`,
+			name:               "successful payload, unknown top level scalar",
+			payload:            `{"unknown":"meta","graph":{"nodes":[]}}`,
 			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph},
 			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
-				assert.ErrorIs(t, err, payload.ErrInvalidFileConfiguration)
-
-				assert.ElementsMatch(t, report.CriticalErrors, []payload.CriticalError{{Message: "unrecognized top level tag: pants", Error: payload.ErrInvalidFileConfiguration}})
+				assert.Equal(t, emptyValidationReport, report)
+				assert.NoError(t, err)
+			},
+		},
+		{
+			name:               "successful payload, unknown top level nested value",
+			payload:            `{"unknown":{"meta":{"graph":["nodes","edges"]}},"graph":{"nodes":[]}}`,
+			expectedParsedData: payload.ParsedData{PayloadType: ingest.DataTypeOpenGraph},
+			errValidationFunc: func(t *testing.T, report payload.ValidationReport, err error) {
+				assert.Equal(t, emptyValidationReport, report)
+				assert.NoError(t, err)
 			},
 		},
 		{
@@ -586,11 +594,19 @@ func Test_ParseAndValidateConfigurationErrors(t *testing.T) {
 			},
 		},
 		{
-			name:        "schema tag missing value",
+			name:        "malformed unknown top level value",
+			payload:     `{"unknown":{"nested":`,
+			errContains: "EOF",
+			expectedCritical: payload.CriticalError{
+				Message: "failed to skip unrecognized top level tag: unknown",
+			},
+		},
+		{
+			name:        "malformed schema tag value",
 			payload:     `{"$schema":`,
 			errContains: "EOF",
 			expectedCritical: payload.CriticalError{
-				Message: "failed to consume $schema value",
+				Message: "failed to skip unrecognized top level tag: $schema",
 			},
 		},
 		{

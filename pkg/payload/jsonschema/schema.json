@@ -10,6 +10,7 @@
       "$ref": "./metadata.json"
     },
     "graph": {
+      "type": "object",
       "properties": {
         "nodes": {
           "type": "array",
@@ -23,8 +24,8 @@
             "$ref": "./edge.json"
           }
         }
-      }
+      },
+      "additionalProperties": false
     }
-  },
-  "additionalProperties": false
+  }
 }

@@ -424,14 +424,11 @@ func (v *Validator) validationLoop() error {
 				if err != nil {
 					return err
 				}
-			case "$schema":
-				if _, err := v.nextToken(); err != nil {
-					v.reportCriticalError("failed to consume $schema value", err)
+			default:
+				if err := v.skipValue(); err != nil {
+					v.reportCriticalError(fmt.Sprintf("failed to skip unrecognized top level tag: %s", tag), err)
 					return err
 				}
-			default:
-				v.reportCriticalError(fmt.Sprintf("unrecognized top level tag: %s", tag), ErrInvalidFileConfiguration)
-				return ErrInvalidFileConfiguration
 			}
 		}
 	}
@@ -699,6 +696,30 @@ func extractJsonSchemaErrors(ve *jsonschema.ValidationError) ([]ValidationErrorD
 }
 
 // Scanner functions ------------------------------------------------------------------------------
+
+// skipValue consumes one complete JSON value and returns with the same depth
+// after a nested object or array has been consumed.
+func (v *Validator) skipValue() error {
+	initialDepth := v.depth
+
+	token, err := v.nextToken()
+	if err != nil {
+		return err
+	}
+
+	delimiter, isDelimiter := token.(json.Delim)
+	if !isDelimiter || (delimiter != ingest.DelimOpenBracket && delimiter != ingest.DelimOpenSquareBracket) {
+		return nil
+	}
+
+	for v.depth > initialDepth {
+		if _, err := v.nextToken(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 // enterObject() consumes the next JSON token. Returns an error if the next token is not {
 func (v *Validator) enterObject() error {

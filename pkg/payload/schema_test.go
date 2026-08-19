@@ -127,8 +127,14 @@ func TestEmbeddedTopLevelJSONSchemaCompilesWithReferences(t *testing.T) {
 			},
 		},
 	}))
-	require.Error(t, schema.Validate(map[string]any{
+	require.NoError(t, schema.Validate(map[string]any{
 		"graph": map[string]any{"nodes": []any{}},
 		"extra": true,
+	}))
+	require.Error(t, schema.Validate(map[string]any{
+		"graph": map[string]any{
+			"nodes":  []any{},
+			"strays": []any{},
+		},
 	}))
 }
