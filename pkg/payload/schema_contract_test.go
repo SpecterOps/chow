@@ -168,9 +168,9 @@ func TestEdgeJSONSchemaContract(t *testing.T) {
 			valid: false,
 		},
 		{
-			name:  "endpoint kind cannot use tag prefix",
-			raw:   `{"start":{"value":"node-1","kind":"tag_Admin"},"end":{"value":"node-2"},"kind":"RELATED"}`,
-			valid: false,
+			name:  "reserved namespace is allowed in endpoint kind filters",
+			raw:   `{"start":{"value":"node-1","kind":"tag_Admin"},"end":{"value":"node-2","kind":"TaG"},"kind":"RELATED"}`,
+			valid: true,
 		},
 		{
 			name:  "id endpoint requires value",

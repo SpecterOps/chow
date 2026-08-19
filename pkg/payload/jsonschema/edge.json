@@ -57,9 +57,6 @@
         },
         "kind": {
           "type": "string",
-          "not": {
-            "pattern": "^[Tt][Aa][Gg](?:_|$)"
-          },
           "description": "Optional kind filter; the referenced node must have this kind."
         }
       },
