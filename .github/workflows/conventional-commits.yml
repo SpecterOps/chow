@@ -29,7 +29,47 @@ on:
 jobs:
   conventional-commit-check:
     name: Check conventional commit formatting
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
-    uses: SpecterOps/BloodHound/.github/workflows/reusable.conventional-commits.yml@main # ratchet:exclude
+    steps:
+      - name: Validate pull request title
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # ratchet:amannn/action-semantic-pull-request@v6
+        id: lint_pr_title
+        with:
+          types: |
+            feat
+            fix
+            docs
+            refactor
+            test
+            chore
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Explain invalid pull request title
+        uses: marocchino/sticky-pull-request-comment@773744901bac0e8cbb5a0dc842800d45e9b2b405 # ratchet:marocchino/sticky-pull-request-comment@v2
+        if: always() && (steps.lint_pr_title.outputs.error_message != null)
+        with:
+          header: pr-title-lint-error
+          message: |
+            Howdy! Thank you for opening this pull request 🙇
+
+            It looks like your pull request title needs some adjustment.
+            We require pull request titles to follow the Conventional Commits specification as outlined in our [documentation](https://github.com/SpecterOps/BloodHound/blob/main/rfc/bh-rfc-2.md).
+            Please review the required format and update your pull request title accordingly.
+            Thank you!
+
+            Details:
+
+            ```
+            ${{ steps.lint_pr_title.outputs.error_message }}
+            ```
+
+      - name: Remove resolved pull request title comment
+        if: ${{ steps.lint_pr_title.outputs.error_message == null }}
+        uses: marocchino/sticky-pull-request-comment@773744901bac0e8cbb5a0dc842800d45e9b2b405 # ratchet:marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-title-lint-error
+          delete: true
