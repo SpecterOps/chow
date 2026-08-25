@@ -1,3 +1,19 @@
+// Copyright 2026 Specter Ops, Inc.
+//
+// Licensed under the Apache License, Version 2.0
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
@@ -120,18 +136,26 @@ func formatValidationError(valErr validator.ValidationError) (string, error) {
 
 	sb.WriteString("VALIDATION ERROR:\n")
 
-	sb.WriteString("Location: " + valErr.Location + "\n")
+	sb.WriteString("Location: ")
+	sb.WriteString(valErr.Location)
+	sb.WriteString("\n")
 
 	err := json.Indent(&objBytes, []byte(valErr.RawObject), "", "\t")
 	if err != nil {
 		return "", err
 	}
 
-	sb.WriteString("Object:\n" + objBytes.String() + "\n")
+	sb.WriteString("Object:\n")
+	sb.WriteString(objBytes.String())
+	sb.WriteString("\n")
 
 	sb.WriteString("Errors:\n")
 	for _, e := range valErr.Errors {
-		sb.WriteString("at " + e.Location + ": " + e.Error + "\n")
+		sb.WriteString("at ")
+		sb.WriteString(e.Location)
+		sb.WriteString(": ")
+		sb.WriteString(e.Error)
+		sb.WriteString("\n")
 	}
 
 	return sb.String(), nil
