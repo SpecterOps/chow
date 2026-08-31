@@ -803,9 +803,10 @@ func (v *Validator) nextToken() (json.Token, error) {
 	}
 
 	if d, ok := tok.(json.Delim); ok {
-		if d == delimOpenObject || d == delimOpenArray {
+		switch d {
+		case delimOpenObject, delimOpenArray:
 			v.depth++
-		} else if d == delimCloseObject || d == delimCloseArray {
+		case delimCloseObject, delimCloseArray:
 			v.depth--
 		}
 	}
