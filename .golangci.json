@@ -1,0 +1,71 @@
+{
+  "formatters": {
+    "exclusions": {
+      "generated": "lax"
+    }
+  },
+  "issues": {
+    "max-issues-per-linter": 0,
+    "max-same-issues": 0
+  },
+  "linters": {
+    "disable": [
+      "errcheck"
+    ],
+    "enable": [
+      "sloglint",
+      "staticcheck"
+    ],
+    "exclusions": {
+      "generated": "lax",
+      "presets": [
+        "comments",
+        "common-false-positives",
+        "legacy",
+        "std-error-handling"
+      ]
+    },
+    "settings": {
+      "staticcheck": {
+        "checks": [
+          "all",
+          "-ST1000",
+          "-ST1003"
+        ]
+      },
+      "govet": {
+        "enable": [
+          "nilness"
+        ]
+      },
+      "sloglint": {
+        "kv-only": false,
+        "attr-only": true,
+        "static-msg": true,
+        "msg-style": "capitalized",
+        "key-naming-case": "snake",
+        "args-on-sep-lines": true
+      }
+    }
+  },
+  "severity": {
+    "default": "major",
+    "rules": [
+      {
+        "linters": [
+          "errcheck"
+        ],
+        "severity": "minor"
+      },
+      {
+        "text": "SA1019:",
+        "severity": "minor"
+      },
+      {
+        "text": "QF([0-9]+):",
+        "severity": "minor"
+      }
+    ]
+  },
+  "version": "2"
+}
