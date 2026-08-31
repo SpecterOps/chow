@@ -15,10 +15,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package ingest
 
-import (
-	"encoding/json"
-)
-
 type OpengraphMetadata struct {
 	SourceKind string `json:"source_kind"`
 }
@@ -153,10 +149,3 @@ func (s CollectionMethod) And(flag CollectionMethod) CollectionMethod {
 func (s CollectionMethod) Or(flag CollectionMethod) CollectionMethod {
 	return s | flag
 }
-
-const (
-	DelimOpenBracket        = json.Delim('{')
-	DelimCloseBracket       = json.Delim('}')
-	DelimOpenSquareBracket  = json.Delim('[')
-	DelimCloseSquareBracket = json.Delim(']')
-)

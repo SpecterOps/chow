@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0
-package validator
+package payload
 
 import (
 	"encoding/json"
@@ -36,6 +36,13 @@ var (
 	ErrInvalidDataType             = errors.New("invalid data type")
 )
 
+const (
+	delimOpenObject  = json.Delim('{')
+	delimCloseObject = json.Delim('}')
+	delimOpenArray   = json.Delim('[')
+	delimCloseArray  = json.Delim(']')
+)
+
 // Validator Definitions --------------------------------------------------------------------------
 
 type Validator struct {
@@ -43,7 +50,7 @@ type Validator struct {
 	decoder *json.Decoder
 	depth   int
 
-	schema IngestSchema
+	schema Schema
 
 	originalData  originalData
 	opengraphData opengraphData
@@ -72,7 +79,7 @@ type opengraphData struct {
 	EdgesValidated int
 }
 
-func NewValidator(reader io.Reader, schema IngestSchema) Validator {
+func NewValidator(reader io.Reader, schema Schema) Validator {
 	return Validator{
 		reader:  reader,
 		decoder: json.NewDecoder(reader),
@@ -104,6 +111,31 @@ type ValidationError struct {
 	Errors    []ValidationErrorDetail
 }
 
+func (s ValidationError) Error() string {
+	var (
+		details = make([]string, 0, len(s.Errors))
+		message = "validation error"
+	)
+
+	if s.Location != "" {
+		message = fmt.Sprintf("%s at %s", message, s.Location)
+	}
+
+	for _, validationErrorDetail := range s.Errors {
+		if validationErrorDetail.Location != "" {
+			details = append(details, fmt.Sprintf("%s: %s", validationErrorDetail.Location, validationErrorDetail.Error))
+		} else if validationErrorDetail.Error != "" {
+			details = append(details, validationErrorDetail.Error)
+		}
+	}
+
+	if len(details) > 0 {
+		message = fmt.Sprintf("%s: %s", message, strings.Join(details, "; "))
+	}
+
+	return message
+}
+
 type ValidationErrorDetail struct {
 	Location string
 	Error    string
@@ -112,18 +144,29 @@ type ValidationErrorDetail struct {
 type ParsedData struct {
 	PayloadType ingest.DataType
 
-	LegacyMetadata ingest.OriginalMetadata
-	OpengraphData  ParsedOpenGraphData
+	// SharpHound and AzureHound Style Metadata
+	OriginalData ParsedOriginalData
+	// OpenGraph Style Metadata
+	OpengraphData ParsedOpenGraphData
+}
+
+type ParsedOriginalData struct {
+	MetadataFound bool
+	Metadata      ingest.OriginalMetadata
 }
 
 type ParsedOpenGraphData struct {
+	MetadataFound  bool
 	Metadata       ingest.OpengraphMetadata
 	NodesValidated int
 	EdgesValidated int
 }
 
-// buildParsedData() aggregates data collected during ParseAndValidate() into the ParsedData struct
-func (v *Validator) buildParsedData() ParsedData {
+// buildValidatedData() aggregates data collected during ParseAndValidate() into the ParsedData struct.
+// It is specific to the validation path and relies on signals (GraphFound, NodesValidated, etc.)
+// that are only populated by validationLoop. ParseMetadata() builds its result inline rather than
+// using this helper.
+func (v *Validator) buildValidatedData() ParsedData {
 	p := ParsedData{}
 
 	if (v.opengraphData.GraphFound || v.opengraphData.MetadataFound) && (v.originalData.MetadataFound || v.originalData.DataFound) {
@@ -135,6 +178,7 @@ func (v *Validator) buildParsedData() ParsedData {
 	}
 
 	if v.opengraphData.MetadataFound {
+		p.OpengraphData.MetadataFound = true
 		p.OpengraphData.Metadata = v.opengraphData.Metadata
 	}
 
@@ -143,7 +187,8 @@ func (v *Validator) buildParsedData() ParsedData {
 
 	if v.originalData.MetadataFound {
 		p.PayloadType = v.originalData.Metadata.Type
-		p.LegacyMetadata = v.originalData.Metadata
+		p.OriginalData.MetadataFound = true
+		p.OriginalData.Metadata = v.originalData.Metadata
 	}
 
 	return p
@@ -159,7 +204,7 @@ func (v *Validator) buildValidationReport() ValidationReport {
 
 // result() is a helper for returning the current parsed data, validation report, and provided error.
 func (v *Validator) result(err error) (ParsedData, ValidationReport, error) {
-	return v.buildParsedData(), v.buildValidationReport(), err
+	return v.buildValidatedData(), v.buildValidationReport(), err
 }
 
 // Error Helper functions -------------------------------------------------------------------------
@@ -211,11 +256,11 @@ func (v *Validator) recurringFileConfigCheck() error {
 }
 
 // finalFileConfigCheck() returns an error if the final state of the file has an invalid arrangement of tags. This
-// includes no tags at all and no graph tag being found to match an opengraph metadata tag. This is designed to be
-// run after the validationLoop has completed
+// includes no recognized payload tags and no graph tag being found to match an opengraph metadata tag. This is
+// designed to be run after the validationLoop has completed.
 func (v *Validator) finalFileConfigCheck() error {
 	if !v.originalData.MetadataFound && !v.originalData.DataFound && !v.opengraphData.MetadataFound && !v.opengraphData.GraphFound {
-		v.reportCriticalError("no tags found", ErrInvalidFileConfiguration)
+		v.reportCriticalError("no valid payload tags found", ErrInvalidFileConfiguration)
 		return ErrInvalidFileConfiguration
 	}
 
@@ -262,6 +307,34 @@ func (v *Validator) ParseAndValidate() (ParsedData, ValidationReport, error) {
 	return v.result(v.finalizeParse())
 }
 
+// ParseMetadata() walks the top-level JSON object and extracts metadata (either legacy "meta" or
+// opengraph "metadata") without performing schema validation of the payload body. It returns as soon
+// as a metadata tag is successfully decoded; the remainder of the reader is not consumed.
+func (v *Validator) ParseMetadata() (ParsedData, error) {
+	if err := v.enterObject(); err != nil {
+		v.reportCriticalError("failed to enter json object", err)
+		return ParsedData{}, err
+	}
+
+	err := v.parseLoop()
+
+	p := ParsedData{}
+	switch {
+	case v.originalData.MetadataFound:
+		p.PayloadType = v.originalData.Metadata.Type
+		p.OriginalData.MetadataFound = true
+		p.OriginalData.Metadata = v.originalData.Metadata
+	case v.opengraphData.MetadataFound:
+		p.PayloadType = ingest.DataTypeOpenGraph
+		p.OpengraphData.MetadataFound = true
+		p.OpengraphData.Metadata = v.opengraphData.Metadata
+	case v.opengraphData.GraphFound:
+		p.PayloadType = ingest.DataTypeOpenGraph
+	}
+
+	return p, err
+}
+
 // readToEnd() checks for trailing input if validation succeeded, then consumes all remaining bytes from the decoder
 // buffer and reader while preserving any existing loop error.
 func (v *Validator) readToEnd(loopErr error) error {
@@ -303,7 +376,7 @@ func (v *Validator) finalizeParse() error {
 	return nil
 }
 
-// Validation Loop functions ----------------------------------------------------------------------
+// Loop functions ----------------------------------------------------------------------
 
 // validationLoop() is the primary driver behind the file validation. It walks through the file and directs to
 // child validation functions
@@ -370,14 +443,54 @@ func (v *Validator) validationLoop() error {
 				if err != nil {
 					return err
 				}
-			case "$schema":
-				if _, err := v.nextToken(); err != nil {
-					v.reportCriticalError("failed to consume $schema value", err)
+			default:
+				if err := v.skipValue(); err != nil {
+					v.reportCriticalError(fmt.Sprintf("failed to skip unrecognized top level tag: %s", tag), err)
 					return err
 				}
+			}
+		}
+	}
+}
+
+// parseLoop() walks the top-level object looking for tags that identify the payload shape
+// ("meta", "metadata"), decoding any metadata tag into the Validator's internal state and
+// returning as soon as a tag that uniquely identifies the payload type is found or the
+// top-level object is exited.
+func (v *Validator) parseLoop() error {
+	for {
+		if tag, exitedBlock, err := v.nextTagAtDepth(1); err != nil {
+			v.reportCriticalError("failed parsing top level tag", err)
+			return err
+		} else if exitedBlock {
+			return nil
+		} else {
+			switch tag {
+			case "meta":
+				v.originalData.MetadataFound = true
+
+				var metadata ingest.OriginalMetadata
+				if err := v.decoder.Decode(&metadata); err != nil {
+					v.reportCriticalError("failed to decode original metadata", err)
+					return err
+				}
+
+				v.originalData.Metadata = metadata
+				return nil
+			case "metadata":
+				v.opengraphData.MetadataFound = true
+
+				var metadata ingest.OpengraphMetadata
+				if err := v.decoder.Decode(&metadata); err != nil {
+					v.reportCriticalError("failed to decode opengraph metadata", err)
+					return err
+				}
+
+				v.opengraphData.Metadata = metadata
+				return nil
+			case "graph":
+				v.opengraphData.GraphFound = true
 			default:
-				v.reportCriticalError(fmt.Sprintf("unrecognized top level tag: %s", tag), ErrInvalidFileConfiguration)
-				return ErrInvalidFileConfiguration
 			}
 		}
 	}
@@ -605,6 +718,30 @@ func extractJsonSchemaErrors(ve *jsonschema.ValidationError) ([]ValidationErrorD
 
 // Scanner functions ------------------------------------------------------------------------------
 
+// skipValue consumes one complete JSON value and returns with the same depth
+// after a nested object or array has been consumed.
+func (v *Validator) skipValue() error {
+	initialDepth := v.depth
+
+	token, err := v.nextToken()
+	if err != nil {
+		return err
+	}
+
+	delimiter, isDelimiter := token.(json.Delim)
+	if !isDelimiter || (delimiter != delimOpenObject && delimiter != delimOpenArray) {
+		return nil
+	}
+
+	for v.depth > initialDepth {
+		if _, err := v.nextToken(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // enterObject() consumes the next JSON token. Returns an error if the next token is not {
 func (v *Validator) enterObject() error {
 	t, err := v.nextToken()
@@ -612,7 +749,7 @@ func (v *Validator) enterObject() error {
 		return err
 	}
 
-	if delim, ok := t.(json.Delim); !ok || delim != ingest.DelimOpenBracket {
+	if delim, ok := t.(json.Delim); !ok || delim != delimOpenObject {
 		return fmt.Errorf("expected open bracket")
 	}
 
@@ -626,7 +763,7 @@ func (v *Validator) enterArray() error {
 		return err
 	}
 
-	if delim, ok := t.(json.Delim); !ok || delim != ingest.DelimOpenSquareBracket {
+	if delim, ok := t.(json.Delim); !ok || delim != delimOpenArray {
 		return fmt.Errorf("expected open square bracket")
 	}
 
@@ -666,9 +803,10 @@ func (v *Validator) nextToken() (json.Token, error) {
 	}
 
 	if d, ok := tok.(json.Delim); ok {
-		if d == ingest.DelimOpenBracket || d == ingest.DelimOpenSquareBracket {
+		switch d {
+		case delimOpenObject, delimOpenArray:
 			v.depth++
-		} else {
+		case delimCloseObject, delimCloseArray:
 			v.depth--
 		}
 	}

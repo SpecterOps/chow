@@ -13,12 +13,13 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0
-package validator
+package payload
 
 import (
 	"bytes"
 	"embed"
 	"fmt"
+	"io/fs"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
@@ -26,14 +27,14 @@ import (
 //go:embed jsonschema
 var schemaFiles embed.FS
 
-type IngestSchema struct {
+type Schema struct {
 	NodeSchema *jsonschema.Schema
 	EdgeSchema *jsonschema.Schema
 	MetaSchema *jsonschema.Schema
 }
 
-func LoadIngestSchema() (IngestSchema, error) {
-	var schema IngestSchema
+func LoadSchema() (Schema, error) {
+	var schema Schema
 	if nodeSchema, err := loadSchema("node.json"); err != nil {
 		return schema, err
 	} else if edgeSchema, err := loadSchema("edge.json"); err != nil {
@@ -49,6 +50,10 @@ func LoadIngestSchema() (IngestSchema, error) {
 }
 
 func loadSchema(filename string) (*jsonschema.Schema, error) {
+	return loadSchemaFromFS(schemaFiles, filename)
+}
+
+func loadSchemaFromFS(schemaFS fs.FS, filename string) (*jsonschema.Schema, error) {
 	var (
 		schemaDir = "jsonschema"
 		compiler  = jsonschema.NewCompiler()
@@ -56,7 +61,7 @@ func loadSchema(filename string) (*jsonschema.Schema, error) {
 
 	// Read the raw JSON schema file from embed.FS
 	path := fmt.Sprintf("%s/%s", schemaDir, filename)
-	if data, err := schemaFiles.ReadFile(path); err != nil {
+	if data, err := fs.ReadFile(schemaFS, path); err != nil {
 		return nil, fmt.Errorf("failed to read schema %q: %w", path, err)
 	} else if document, err := jsonschema.UnmarshalJSON(bytes.NewReader(data)); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal schema %q: %w", path, err)
